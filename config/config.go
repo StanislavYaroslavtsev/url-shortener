@@ -11,7 +11,6 @@ var AppConfig *Config
 
 type Config struct {
 	Server struct {
-		Addr string `mapstructure:"addr"`
 		Host string `mapstructure:"host"`
 		Port int    `mapstructure:"port"`
 	} `mapstructure:"server"`
