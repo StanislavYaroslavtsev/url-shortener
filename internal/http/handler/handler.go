@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/StanislavYaroslavtsev/url-shortener/config"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/http/dto"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -11,6 +12,14 @@ import (
 
 type Handler struct {
 	Service *service.UrlService
+	Config  *config.Config
+}
+
+func NewHandler(svc *service.UrlService, config *config.Config) *Handler {
+	return &Handler{
+		Service: svc,
+		Config:  config,
+	}
 }
 
 func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
@@ -31,10 +40,8 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	// Replace with configurable base URL
-	baseURL := "http://localhost:3000"
 	_ = json.NewEncoder(w).Encode(dto.ShortenResponse{
-		ShortURL: baseURL + shortKey,
+		ShortURL: h.Config.App.BaseURL + "/" + shortKey,
 	})
 }
 

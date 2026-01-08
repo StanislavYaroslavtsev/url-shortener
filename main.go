@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/StanislavYaroslavtsev/url-shortener/config"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/cache"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/http/handler"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/repository"
@@ -22,6 +24,7 @@ func main() {
 	svc := service.NewUrlService(memoryRepository, memoryCache)
 
 	ctx := context.Background()
+	cfg := config.GetConfig()
 
 	shortCode, err := svc.ShortenURL(ctx, "https://google.com/", "123")
 	if err != nil {
@@ -36,9 +39,7 @@ func main() {
 	fmt.Println(originalURL)
 
 	router := chi.NewRouter()
-	h := handler.Handler{
-		Service: svc,
-	}
+	h := handler.NewHandler(svc, cfg)
 
 	// Middleware
 	router.Use(middleware.Logger)
@@ -52,7 +53,7 @@ func main() {
 	router.Get("/{id}", h.RedirectURL)
 
 	server := &http.Server{
-		Addr:    "localhost:3000",
+		Addr:    h.Config.Server.Host + ":" + strconv.Itoa(h.Config.Server.Port),
 		Handler: router,
 	}
 
