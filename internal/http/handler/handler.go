@@ -8,17 +8,20 @@ import (
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/http/dto"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/service"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-playground/validator/v10"
 )
 
 type Handler struct {
-	Service *service.UrlService
-	Config  *config.Config
+	Service   *service.UrlService
+	Config    *config.Config
+	Validator *validator.Validate
 }
 
 func NewHandler(svc *service.UrlService, config *config.Config) *Handler {
 	return &Handler{
-		Service: svc,
-		Config:  config,
+		Service:   svc,
+		Config:    config,
+		Validator: validator.New(),
 	}
 }
 
@@ -27,6 +30,11 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.Validator.Struct(req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
