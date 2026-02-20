@@ -6,18 +6,18 @@ import (
 	"sync"
 )
 
-type MemoryCache struct {
+type InMemoryCache struct {
 	mu    sync.RWMutex
 	store map[string]string
 }
 
-func NewMemoryCache() *MemoryCache {
-	return &MemoryCache{
+func NewInMemoryCache() *InMemoryCache {
+	return &InMemoryCache{
 		store: make(map[string]string),
 	}
 }
 
-func (cache *MemoryCache) Set(ctx context.Context, key, value string) error {
+func (cache *InMemoryCache) Set(ctx context.Context, key, value string) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
@@ -25,7 +25,7 @@ func (cache *MemoryCache) Set(ctx context.Context, key, value string) error {
 	return nil
 }
 
-func (cache *MemoryCache) Get(ctx context.Context, key string) (string, error) {
+func (cache *InMemoryCache) Get(ctx context.Context, key string) (string, error) {
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
 

@@ -9,18 +9,18 @@ import (
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/entity"
 )
 
-type MemoryRepository struct {
+type InMemoryRepository struct {
 	mu    sync.RWMutex
 	links map[string]entity.Link
 }
 
-func NewMemoryRepository() *MemoryRepository {
-	return &MemoryRepository{
+func NewInMemoryRepository() *InMemoryRepository {
+	return &InMemoryRepository{
 		links: make(map[string]entity.Link),
 	}
 }
 
-func (repo *MemoryRepository) Save(ctx context.Context, url, code, userID string) error {
+func (repo *InMemoryRepository) Save(ctx context.Context, url, code, userID string) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 
@@ -37,7 +37,7 @@ func (repo *MemoryRepository) Save(ctx context.Context, url, code, userID string
 	return nil
 }
 
-func (repo *MemoryRepository) Get(ctx context.Context, code string) (string, error) {
+func (repo *InMemoryRepository) Get(ctx context.Context, code string) (string, error) {
 	repo.mu.RLock()
 	defer repo.mu.RUnlock()
 
@@ -49,7 +49,7 @@ func (repo *MemoryRepository) Get(ctx context.Context, code string) (string, err
 	return record.URL, nil
 }
 
-func (repo *MemoryRepository) Delete(ctx context.Context, code string) error {
+func (repo *InMemoryRepository) Delete(ctx context.Context, code string) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 

@@ -19,9 +19,9 @@ import (
 )
 
 func main() {
-	memoryRepository := repository.NewMemoryRepository()
-	memoryCache := cache.NewMemoryCache()
-	svc := service.NewLinkService(memoryRepository, memoryCache)
+	memRepo := repository.NewInMemoryRepository()
+	memCache := cache.NewInMemoryCache()
+	svc := service.NewLinkService(memRepo, memCache)
 
 	ctx := context.Background()
 	cfg := config.GetConfig()
