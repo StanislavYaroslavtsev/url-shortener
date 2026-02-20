@@ -7,7 +7,7 @@ import (
 )
 
 type MemoryCache struct {
-	mutex sync.RWMutex
+	mu    sync.RWMutex
 	store map[string]string
 }
 
@@ -18,16 +18,16 @@ func NewMemoryCache() *MemoryCache {
 }
 
 func (cache *MemoryCache) Set(ctx context.Context, key, value string) error {
-	cache.mutex.Lock()
-	defer cache.mutex.Unlock()
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
 
 	cache.store[key] = value
 	return nil
 }
 
 func (cache *MemoryCache) Get(ctx context.Context, key string) (string, error) {
-	cache.mutex.RLock()
-	defer cache.mutex.RUnlock()
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
 
 	val, ok := cache.store[key]
 	if !ok {

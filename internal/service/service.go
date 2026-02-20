@@ -9,45 +9,45 @@ import (
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/repository"
 )
 
-type UrlService struct {
-	repo  repository.URLRepository
+type LinkService struct {
+	repo  repository.LinkRepository
 	cache cache.Cache
 }
 
-func NewUrlService(repo repository.URLRepository, cache cache.Cache) *UrlService {
-	return &UrlService{
+func NewLinkService(repo repository.LinkRepository, cache cache.Cache) *LinkService {
+	return &LinkService{
 		repo:  repo,
 		cache: cache,
 	}
 }
 
-func (s *UrlService) ShortenURL(ctx context.Context, originalURL, userID string) (string, error) {
-	shortCode := GenerateShortCode(originalURL)
+func (s *LinkService) Create(ctx context.Context, url, userID string) (string, error) {
+	code := GenerateCode(url)
 
-	err := s.repo.SaveURL(ctx, originalURL, shortCode, userID)
+	err := s.repo.Save(ctx, url, code, userID)
 	if err != nil {
 		return "", err
 	}
 
-	err = s.cache.Set(ctx, shortCode, originalURL)
-	return shortCode, err
+	err = s.cache.Set(ctx, code, url)
+	return code, err
 }
 
-func (s *UrlService) ExpandURL(ctx context.Context, shortCode string) (string, error) {
-	if cached, err := s.cache.Get(ctx, shortCode); err == nil {
+func (s *LinkService) Get(ctx context.Context, code string) (string, error) {
+	if cached, err := s.cache.Get(ctx, code); err == nil {
 		return cached, nil
 	}
 
-	originalURL, err := s.repo.GetURL(ctx, shortCode)
+	url, err := s.repo.Get(ctx, code)
 	if err != nil {
 		return "", err
 	}
 
-	err = s.cache.Set(ctx, shortCode, originalURL)
-	return originalURL, err
+	err = s.cache.Set(ctx, code, url)
+	return url, err
 }
 
-func GenerateShortCode(url string) string {
+func GenerateCode(url string) string {
 	hash := md5.Sum([]byte(url))
 	return fmt.Sprintf("%x", hash)[:6]
 }

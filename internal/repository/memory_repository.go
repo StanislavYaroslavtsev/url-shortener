@@ -10,49 +10,49 @@ import (
 )
 
 type MemoryRepository struct {
-	mutex sync.RWMutex
-	urls  map[string]entity.URL
+	mu    sync.RWMutex
+	links map[string]entity.Link
 }
 
 func NewMemoryRepository() *MemoryRepository {
 	return &MemoryRepository{
-		urls: make(map[string]entity.URL),
+		links: make(map[string]entity.Link),
 	}
 }
 
-func (repo *MemoryRepository) SaveURL(ctx context.Context, originalURL, shortCode, userID string) error {
-	repo.mutex.Lock()
-	defer repo.mutex.Unlock()
+func (repo *MemoryRepository) Save(ctx context.Context, url, code, userID string) error {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 
-	if _, exists := repo.urls[shortCode]; exists {
-		return fmt.Errorf("short code already exists: %s", shortCode)
+	if _, exists := repo.links[code]; exists {
+		return fmt.Errorf("code already exists: %s", code)
 	}
 
-	repo.urls[shortCode] = entity.URL{
-		OriginalURL: originalURL,
-		ShortCode:   shortCode,
-		UserID:      userID,
-		CreatedAt:   time.Now(),
+	repo.links[code] = entity.Link{
+		URL:       url,
+		Code:      code,
+		UserID:    userID,
+		CreatedAt: time.Now(),
 	}
 	return nil
 }
 
-func (repo *MemoryRepository) GetURL(ctx context.Context, shortCode string) (string, error) {
-	repo.mutex.RLock()
-	defer repo.mutex.RUnlock()
+func (repo *MemoryRepository) Get(ctx context.Context, code string) (string, error) {
+	repo.mu.RLock()
+	defer repo.mu.RUnlock()
 
-	record, exists := repo.urls[shortCode]
+	record, exists := repo.links[code]
 	if !exists {
-		return "", fmt.Errorf("URL not found for code: %s", shortCode)
+		return "", fmt.Errorf("link not found for code: %s", code)
 	}
 
-	return record.OriginalURL, nil
+	return record.URL, nil
 }
 
-func (repo *MemoryRepository) DeleteURL(ctx context.Context, shortCode string) error {
-	repo.mutex.Lock()
-	defer repo.mutex.Unlock()
+func (repo *MemoryRepository) Delete(ctx context.Context, code string) error {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 
-	delete(repo.urls, shortCode)
+	delete(repo.links, code)
 	return nil
 }

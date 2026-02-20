@@ -21,22 +21,22 @@ import (
 func main() {
 	memoryRepository := repository.NewMemoryRepository()
 	memoryCache := cache.NewMemoryCache()
-	svc := service.NewUrlService(memoryRepository, memoryCache)
+	svc := service.NewLinkService(memoryRepository, memoryCache)
 
 	ctx := context.Background()
 	cfg := config.GetConfig()
 
-	shortCode, err := svc.ShortenURL(ctx, "https://google.com/", "123")
+	code, err := svc.Create(ctx, "https://google.com/", "123")
 	if err != nil {
 		log.Fatalf("Failed to shorten URL: %v", err)
 	}
-	fmt.Println(shortCode)
+	fmt.Println(code)
 
-	originalURL, err := svc.ExpandURL(ctx, shortCode)
+	url, err := svc.Get(ctx, code)
 	if err != nil {
-		log.Fatalf("Failed to expand URL: %v", err)
+		log.Fatalf("Failed to get URL: %v", err)
 	}
-	fmt.Println(originalURL)
+	fmt.Println(url)
 
 	router := chi.NewRouter()
 	h := handler.NewHandler(svc, cfg)

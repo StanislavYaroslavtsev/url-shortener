@@ -12,12 +12,12 @@ import (
 )
 
 type Handler struct {
-	Service   *service.UrlService
+	Service   *service.LinkService
 	Config    *config.Config
 	Validator *validator.Validate
 }
 
-func NewHandler(svc *service.UrlService, config *config.Config) *Handler {
+func NewHandler(svc *service.LinkService, config *config.Config) *Handler {
 	return &Handler{
 		Service:   svc,
 		Config:    config,
@@ -38,7 +38,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortKey, err := h.Service.ShortenURL(r.Context(), req.URL, r.RemoteAddr)
+	shortKey, err := h.Service.Create(r.Context(), req.URL, r.RemoteAddr)
 
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
@@ -54,14 +54,14 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) RedirectURL(w http.ResponseWriter, r *http.Request) {
-	shortKey := chi.URLParam(r, "id")
+	code := chi.URLParam(r, "id")
 
-	original, err := h.Service.ExpandURL(r.Context(), shortKey)
+	url, err := h.Service.Get(r.Context(), code)
 
 	if err != nil {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
 
-	http.Redirect(w, r, original, http.StatusFound)
+	http.Redirect(w, r, url, http.StatusFound)
 }
