@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/cache"
+	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/repository"
 )
 
@@ -21,30 +22,34 @@ func NewLinkService(repo repository.LinkRepository, cache cache.Cache) *LinkServ
 	}
 }
 
-func (s *LinkService) Create(ctx context.Context, url, userID string) (string, error) {
+func (s *LinkService) Create(ctx context.Context, url, userID string) (*domain.Link, error) {
 	code := GenerateCode(url)
 
-	err := s.repo.Save(ctx, url, code, userID)
+	link, err := domain.NewLink(url, code, userID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	err = s.cache.Set(ctx, code, url)
-	return code, err
+	if err = s.repo.Save(ctx, link); err != nil {
+		return nil, err
+	}
+
+	err = s.cache.Set(ctx, code, link)
+	return link, err
 }
 
-func (s *LinkService) Get(ctx context.Context, code string) (string, error) {
+func (s *LinkService) Get(ctx context.Context, code string) (*domain.Link, error) {
 	if cached, err := s.cache.Get(ctx, code); err == nil {
 		return cached, nil
 	}
 
-	url, err := s.repo.Get(ctx, code)
+	link, err := s.repo.Get(ctx, code)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	err = s.cache.Set(ctx, code, url)
-	return url, err
+	err = s.cache.Set(ctx, code, link)
+	return link, err
 }
 
 func GenerateCode(url string) string {

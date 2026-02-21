@@ -2,26 +2,27 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
+	"log"
 	"net/http"
 
 	"github.com/StanislavYaroslavtsev/url-shortener/config"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/http/dto"
+	"github.com/StanislavYaroslavtsev/url-shortener/internal/repository"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 )
 
 type Handler struct {
-	Service   *service.LinkService
-	Config    *config.Config
-	Validator *validator.Validate
+	Service *service.LinkService
+	Config  *config.Config
 }
 
 func NewHandler(svc *service.LinkService, config *config.Config) *Handler {
 	return &Handler{
-		Service:   svc,
-		Config:    config,
-		Validator: validator.New(),
+		Service: svc,
+		Config:  config,
 	}
 }
 
@@ -33,15 +34,21 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.Validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	shortKey, err := h.Service.Create(r.Context(), req.URL, r.RemoteAddr)
+	link, err := h.Service.Create(r.Context(), req.URL, r.RemoteAddr)
 
 	if err != nil {
-		http.Error(w, "Internal error", http.StatusInternalServerError)
+		if _, ok := errors.AsType[validator.ValidationErrors](err); ok {
+			http.Error(w, "Invalid URL format", http.StatusBadRequest)
+			return
+		}
+
+		switch {
+		case errors.Is(err, repository.ErrCodeExists):
+			http.Error(w, "Code already exists, try again", http.StatusConflict)
+		default:
+			log.Printf("Unexpected error: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -49,19 +56,25 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	_ = json.NewEncoder(w).Encode(dto.ShortenResponse{
-		ShortURL: h.Config.App.BaseURL + "/" + shortKey,
+		ShortURL: h.Config.App.BaseURL + "/" + link.Code,
 	})
 }
 
 func (h *Handler) RedirectURL(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "id")
 
-	url, err := h.Service.Get(r.Context(), code)
+	link, err := h.Service.Get(r.Context(), code)
 
 	if err != nil {
-		http.Error(w, "Not found", http.StatusNotFound)
+		switch {
+		case errors.Is(err, repository.ErrLinkNotFound):
+			http.Error(w, "Link not found", http.StatusNotFound)
+		default:
+			log.Printf("Unexpected error: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
 		return
 	}
 
-	http.Redirect(w, r, url, http.StatusFound)
+	http.Redirect(w, r, link.URL, http.StatusFound)
 }

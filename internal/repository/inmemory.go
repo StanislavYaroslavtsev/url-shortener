@@ -2,56 +2,53 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"sync"
-	"time"
 
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/entity"
+	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
 )
 
 type InMemoryRepository struct {
 	mu    sync.RWMutex
-	links map[string]entity.Link
+	links map[string]domain.Link
 }
 
 func NewInMemoryRepository() *InMemoryRepository {
 	return &InMemoryRepository{
-		links: make(map[string]entity.Link),
+		links: make(map[string]domain.Link),
 	}
 }
 
-func (repo *InMemoryRepository) Save(ctx context.Context, url, code, userID string) error {
+func (repo *InMemoryRepository) Save(ctx context.Context, link *domain.Link) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 
-	if _, exists := repo.links[code]; exists {
-		return fmt.Errorf("code already exists: %s", code)
+	if _, exists := repo.links[link.Code]; exists {
+		return ErrCodeExists
 	}
 
-	repo.links[code] = entity.Link{
-		URL:       url,
-		Code:      code,
-		UserID:    userID,
-		CreatedAt: time.Now(),
-	}
+	repo.links[link.Code] = *link
 	return nil
 }
 
-func (repo *InMemoryRepository) Get(ctx context.Context, code string) (string, error) {
+func (repo *InMemoryRepository) Get(ctx context.Context, code string) (*domain.Link, error) {
 	repo.mu.RLock()
 	defer repo.mu.RUnlock()
 
-	record, exists := repo.links[code]
+	link, exists := repo.links[code]
 	if !exists {
-		return "", fmt.Errorf("link not found for code: %s", code)
+		return nil, ErrLinkNotFound
 	}
 
-	return record.URL, nil
+	return &link, nil
 }
 
 func (repo *InMemoryRepository) Delete(ctx context.Context, code string) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
+
+	if _, exists := repo.links[code]; !exists {
+		return ErrLinkNotFound
+	}
 
 	delete(repo.links, code)
 	return nil

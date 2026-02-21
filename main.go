@@ -26,17 +26,17 @@ func main() {
 	ctx := context.Background()
 	cfg := config.GetConfig()
 
-	code, err := svc.Create(ctx, "https://google.com/", "123")
+	link, err := svc.Create(ctx, "https://google.com/", "123")
 	if err != nil {
 		log.Fatalf("Failed to shorten URL: %v", err)
 	}
-	fmt.Println(code)
+	fmt.Println(link.Code)
 
-	url, err := svc.Get(ctx, code)
+	receivedLink, err := svc.Get(ctx, link.Code)
 	if err != nil {
 		log.Fatalf("Failed to get URL: %v", err)
 	}
-	fmt.Println(url)
+	fmt.Println(receivedLink.URL)
 
 	router := chi.NewRouter()
 	h := handler.NewHandler(svc, cfg)

@@ -1,9 +1,13 @@
 package cache
 
-import "context"
+import (
+	"context"
+
+	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
+)
 
 type Cache interface {
-	Get(ctx context.Context, key string) (string, error)
-	Set(ctx context.Context, key, value string) error
+	Get(ctx context.Context, code string) (*domain.Link, error)
+	Set(ctx context.Context, code string, link *domain.Link) error
 	Close()
 }

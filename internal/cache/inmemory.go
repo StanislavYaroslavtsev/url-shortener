@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
 )
 
 type InMemoryCache struct {
@@ -15,7 +17,7 @@ type InMemoryCache struct {
 }
 
 type Item struct {
-	value     string
+	link      *domain.Link
 	expiresAt int64
 }
 
@@ -32,31 +34,31 @@ func NewInMemoryCache(ttl time.Duration, cleanupInterval time.Duration) *InMemor
 	return cache
 }
 
-func (cache *InMemoryCache) Set(ctx context.Context, key, value string) error {
+func (cache *InMemoryCache) Set(ctx context.Context, code string, link *domain.Link) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
-	cache.store[key] = Item{
-		value:     value,
+	cache.store[code] = Item{
+		link:      link,
 		expiresAt: time.Now().Add(cache.ttl).Unix(),
 	}
 	return nil
 }
 
-func (cache *InMemoryCache) Get(ctx context.Context, key string) (string, error) {
+func (cache *InMemoryCache) Get(ctx context.Context, code string) (*domain.Link, error) {
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
 
-	item, ok := cache.store[key]
+	item, ok := cache.store[code]
 	if !ok {
-		return "", fmt.Errorf("key '%s' not found", key)
+		return nil, fmt.Errorf("code '%s' not found", code)
 	}
 
 	if time.Now().Unix() > item.expiresAt {
-		return "", fmt.Errorf("key '%s' expired", key)
+		return nil, fmt.Errorf("code '%s' expired", code)
 	}
 
-	return item.value, nil
+	return item.link, nil
 }
 
 func (cache *InMemoryCache) deleteExpired() {
