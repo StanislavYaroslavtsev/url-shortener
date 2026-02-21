@@ -55,9 +55,10 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	_ = json.NewEncoder(w).Encode(dto.ShortenResponse{
-		ShortURL: h.Config.App.BaseURL + "/" + link.Code,
-	})
+	resp := dto.NewShortenResponse(link, h.Config.App.BaseURL)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("failed to encode response: %v", err)
+	}
 }
 
 func (h *Handler) RedirectURL(w http.ResponseWriter, r *http.Request) {
