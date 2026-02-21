@@ -20,7 +20,7 @@ import (
 
 func main() {
 	memRepo := repository.NewInMemoryRepository()
-	memCache := cache.NewInMemoryCache()
+	memCache := cache.NewInMemoryCache(24*time.Hour, 1*time.Minute)
 	svc := service.NewLinkService(memRepo, memCache)
 
 	ctx := context.Background()
