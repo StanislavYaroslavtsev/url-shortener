@@ -34,7 +34,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := h.Service.Create(r.Context(), req.URL, r.RemoteAddr)
+	link, err := h.Service.Create(r.Context(), req.URL)
 
 	if err != nil {
 		if _, ok := errors.AsType[validator.ValidationErrors](err); ok {
@@ -56,7 +56,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	resp := dto.NewShortenResponse(link, h.Config.App.BaseURL)
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
+	if err = json.NewEncoder(w).Encode(resp); err != nil {
 		log.Printf("failed to encode response: %v", err)
 	}
 }

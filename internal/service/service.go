@@ -22,10 +22,10 @@ func NewLinkService(repo repository.LinkRepository, cache cache.Cache) *LinkServ
 	}
 }
 
-func (s *LinkService) Create(ctx context.Context, url, userID string) (*domain.Link, error) {
+func (s *LinkService) Create(ctx context.Context, url string) (*domain.Link, error) {
 	code := GenerateCode(url)
 
-	link, err := domain.NewLink(url, code, userID)
+	link, err := domain.NewLink(url, code)
 	if err != nil {
 		return nil, err
 	}

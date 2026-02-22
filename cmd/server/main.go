@@ -26,7 +26,7 @@ func main() {
 	ctx := context.Background()
 	cfg := config.GetConfig()
 
-	link, err := svc.Create(ctx, "https://google.com/", "123")
+	link, err := svc.Create(ctx, "https://google.com/")
 	if err != nil {
 		log.Fatalf("Failed to shorten URL: %v", err)
 	}
