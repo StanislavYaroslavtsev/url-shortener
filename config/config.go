@@ -2,7 +2,7 @@ package config
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 
 	"github.com/spf13/viper"
 )
@@ -29,15 +29,17 @@ func Init() {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := errors.AsType[viper.ConfigFileNotFoundError](err); ok {
-			log.Println("Config file not found, using defaults")
+			slog.Warn("Config file not found, using defaults")
 		}
 	}
 
 	if err := viper.Unmarshal(&AppConfig); err != nil {
-		log.Fatalf("Unable to decode config: %v", err)
+		slog.Error("Unable to decode config",
+			"error", err,
+		)
 	}
 
-	log.Printf("Config loaded")
+	slog.Info("Config loaded")
 }
 
 func setDefaults() {

@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
 	"errors"
-	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -23,20 +21,7 @@ func main() {
 	memCache := cache.NewInMemoryCache(24*time.Hour, 1*time.Minute)
 	svc := service.NewLinkService(memRepo, memCache)
 
-	ctx := context.Background()
 	cfg := config.GetConfig()
-
-	link, err := svc.Create(ctx, "https://google.com/")
-	if err != nil {
-		log.Fatalf("Failed to shorten URL: %v", err)
-	}
-	fmt.Println(link.Code)
-
-	receivedLink, err := svc.Get(ctx, link.Code)
-	if err != nil {
-		log.Fatalf("Failed to get URL: %v", err)
-	}
-	fmt.Println(receivedLink.URL)
 
 	router := chi.NewRouter()
 	h := handler.NewHandler(svc, cfg)
@@ -57,8 +42,11 @@ func main() {
 		Handler: router,
 	}
 
-	log.Printf("Starting server on %s", server.Addr)
+	slog.Info("Starting server",
+		"address", server.Addr,
+	)
+
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatalf("Server failed: %v", err)
+		slog.Error("Server failed", "error", err)
 	}
 }

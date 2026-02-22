@@ -3,7 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/StanislavYaroslavtsev/url-shortener/config"
@@ -42,7 +42,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Printf("Unexpected error: %v", err)
+		slog.Error("Unexpected error", "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -52,7 +52,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 
 	resp := dto.NewShortenResponse(link, h.Config.App.BaseURL)
 	if err = json.NewEncoder(w).Encode(resp); err != nil {
-		log.Printf("failed to encode response: %v", err)
+		slog.Error("failed to encode response", "error", err)
 	}
 }
 
@@ -66,7 +66,7 @@ func (h *Handler) RedirectURL(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, repository.ErrLinkNotFound):
 			http.Error(w, "Link not found", http.StatusNotFound)
 		default:
-			log.Printf("Unexpected error: %v", err)
+			slog.Error("Unexpected error", "error", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
 		return

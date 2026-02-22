@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/cache"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
@@ -41,7 +41,10 @@ func (s *LinkService) Create(ctx context.Context, url string) (*domain.Link, err
 	}
 
 	if err = s.cache.Set(ctx, code, link); err != nil {
-		log.Printf("Failed to write to cache for code %s: %v", code, err)
+		slog.Warn("Failed to write to cache",
+			"code", code,
+			"error", err,
+		)
 	}
 
 	return link, nil
@@ -58,7 +61,10 @@ func (s *LinkService) Get(ctx context.Context, code string) (*domain.Link, error
 	}
 
 	if err = s.cache.Set(ctx, code, link); err != nil {
-		log.Printf("Failed to write to cache for code %s: %v", code, err)
+		slog.Warn("Failed to write to cache",
+			"code", code,
+			"error", err,
+		)
 	}
 
 	return link, nil
