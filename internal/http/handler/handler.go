@@ -42,13 +42,8 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		switch {
-		case errors.Is(err, repository.ErrCodeExists):
-			http.Error(w, "Code already exists, try again", http.StatusConflict)
-		default:
-			log.Printf("Unexpected error: %v", err)
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-		}
+		log.Printf("Unexpected error: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 

@@ -23,6 +23,11 @@ func NewLinkService(repo repository.LinkRepository, cache cache.Cache) *LinkServ
 }
 
 func (s *LinkService) Create(ctx context.Context, url string) (*domain.Link, error) {
+	if existing, err := s.repo.FindByURL(ctx, url); err == nil {
+		_ = s.cache.Set(ctx, existing.Code, existing)
+		return existing, nil
+	}
+
 	code := GenerateCode(url)
 
 	link, err := domain.NewLink(url, code)
