@@ -1,10 +1,15 @@
 package main
 
 import (
+	"context"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/StanislavYaroslavtsev/url-shortener/config"
@@ -57,11 +62,42 @@ func main() {
 		Handler: router,
 	}
 
-	slog.Info("Starting server",
-		"address", server.Addr,
-	)
+	errChan := make(chan error, 1)
 
-	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	go func() {
+		slog.Info("Starting server", "address", server.Addr)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errChan <- err
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case err := <-errChan:
 		slog.Error("Server failed", "error", err)
+	case <-quit:
+		slog.Info("Shutting down server...")
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		slog.Error("Server forced to shutdown", "error", err)
+	}
+
+	memCache.Close()
+	slog.Info("Cache closed")
+
+	if pgRepo, ok := repo.(io.Closer); ok {
+		if err := pgRepo.Close(); err != nil {
+			slog.Error("Failed to close postgres connection", "error", err)
+		} else {
+			slog.Info("Postgres connection closed")
+		}
+	}
+
+	slog.Info("Server stopped")
 }
