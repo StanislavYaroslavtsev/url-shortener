@@ -17,11 +17,26 @@ import (
 )
 
 func main() {
-	memRepo := repository.NewInMemoryRepository()
-	memCache := cache.NewInMemoryCache(24*time.Hour, 1*time.Minute)
-	svc := service.NewLinkService(memRepo, memCache)
-
 	cfg := config.GetConfig()
+
+	var repo repository.LinkRepository
+
+	if cfg.Database.UsePostgres {
+		pgRepo, err := repository.NewPostgresRepository(cfg)
+		if err != nil {
+			slog.Error("Failed to connect to postgres", "error", err)
+			panic(err)
+		}
+
+		slog.Info("Using PostgreSQL repository")
+		repo = pgRepo
+	} else {
+		slog.Info("Using in-memory repository")
+		repo = repository.NewInMemoryRepository()
+	}
+
+	memCache := cache.NewInMemoryCache(24*time.Hour, 1*time.Minute)
+	svc := service.NewLinkService(repo, memCache)
 
 	router := chi.NewRouter()
 	h := handler.NewHandler(svc, cfg)
