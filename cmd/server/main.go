@@ -64,7 +64,7 @@ func main() {
 	router.Get("/{id}", h.RedirectURL)
 
 	server := &http.Server{
-		Addr:    h.Config.Server.Host + ":" + strconv.Itoa(h.Config.Server.Port),
+		Addr:    cfg.Server.Host + ":" + strconv.Itoa(cfg.Server.Port),
 		Handler: router,
 	}
 
