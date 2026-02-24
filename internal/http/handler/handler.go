@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/StanislavYaroslavtsev/url-shortener/config"
+	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/http/dto"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/repository"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/service"
@@ -15,29 +15,44 @@ import (
 )
 
 type Handler struct {
-	Service *service.LinkService
-	Config  *config.Config
+	service  *service.LinkService
+	baseURL  string
+	validate *validator.Validate
 }
 
-func NewHandler(svc *service.LinkService, config *config.Config) *Handler {
+func NewHandler(svc *service.LinkService, baseURL string) *Handler {
 	return &Handler{
-		Service: svc,
-		Config:  config,
+		service:  svc,
+		baseURL:  baseURL,
+		validate: validator.New(),
 	}
 }
 
 func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	var req dto.ShortenRequest
 
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
+
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	link, err := h.Service.Create(r.Context(), req.URL)
+	if err := h.validate.Struct(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	link, err := h.service.Create(r.Context(), req.URL)
 
 	if err != nil {
-		if _, ok := errors.AsType[validator.ValidationErrors](err); ok {
+		if errors.Is(err, domain.ErrInvalidLink) {
 			http.Error(w, "Invalid URL format", http.StatusBadRequest)
 			return
 		}
@@ -47,19 +62,24 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	resp := dto.NewShortenResponse(link.Code, h.baseURL)
+
+	data, err := json.Marshal(resp)
+	if err != nil {
+		slog.Error("failed to marshal response", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-
-	resp := dto.NewShortenResponse(link, h.Config.App.BaseURL)
-	if err = json.NewEncoder(w).Encode(resp); err != nil {
-		slog.Error("failed to encode response", "error", err)
-	}
+	_, _ = w.Write(data)
 }
 
 func (h *Handler) RedirectURL(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "id")
 
-	link, err := h.Service.Get(r.Context(), code)
+	link, err := h.service.Get(r.Context(), code)
 
 	if err != nil {
 		switch {

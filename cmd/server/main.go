@@ -52,7 +52,7 @@ func main() {
 	memCache := cache.NewInMemoryCache(cfg.Cache.TTL, cfg.Cache.CleanupInterval)
 
 	svc := service.NewLinkService(repo, memCache)
-	h := handler.NewHandler(svc, cfg)
+	h := handler.NewHandler(svc, cfg.App.BaseURL)
 
 	router := chi.NewRouter()
 

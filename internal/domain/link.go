@@ -17,7 +17,7 @@ type Link struct {
 
 func (l *Link) Validate() error {
 	if err := validate.Struct(l); err != nil {
-		return fmt.Errorf("invalid link: %w", err)
+		return fmt.Errorf("%w: %s", ErrInvalidLink, err.Error())
 	}
 
 	return nil
