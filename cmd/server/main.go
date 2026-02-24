@@ -10,7 +10,6 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
-	"time"
 
 	"github.com/StanislavYaroslavtsev/url-shortener/config"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/cache"
@@ -28,7 +27,11 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	cfg := config.GetConfig()
+	cfg, err := config.Init()
+	if err != nil {
+		slog.Error("Failed to load config", "error", err)
+		os.Exit(1)
+	}
 
 	var repo repository.LinkRepository
 
@@ -46,26 +49,31 @@ func main() {
 		repo = repository.NewInMemoryRepository()
 	}
 
-	memCache := cache.NewInMemoryCache(24*time.Hour, 1*time.Minute)
+	memCache := cache.NewInMemoryCache(cfg.Cache.TTL, cfg.Cache.CleanupInterval)
+
 	svc := service.NewLinkService(repo, memCache)
+	h := handler.NewHandler(svc, cfg)
 
 	router := chi.NewRouter()
-	h := handler.NewHandler(svc, cfg)
 
 	// Middleware
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
-	router.Use(middleware.Timeout(60 * time.Second))
+	router.Use(middleware.Timeout(cfg.Server.HandlerTimeout))
 
 	// Routes
 	router.Post("/shorten", h.ShortenURL)
 	router.Get("/{id}", h.RedirectURL)
 
+	addr := cfg.Server.Host + ":" + strconv.Itoa(cfg.Server.Port)
 	server := &http.Server{
-		Addr:    cfg.Server.Host + ":" + strconv.Itoa(cfg.Server.Port),
-		Handler: router,
+		Addr:         addr,
+		Handler:      router,
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
+		IdleTimeout:  cfg.Server.IdleTimeout,
 	}
 
 	errChan := make(chan error, 1)
@@ -87,7 +95,7 @@ func main() {
 		slog.Info("Shutting down server...")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
