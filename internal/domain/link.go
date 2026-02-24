@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -15,14 +16,18 @@ type Link struct {
 }
 
 func (l *Link) Validate() error {
-	return validate.Struct(l)
+	if err := validate.Struct(l); err != nil {
+		return fmt.Errorf("invalid link: %w", err)
+	}
+
+	return nil
 }
 
 func NewLink(url, code string) (*Link, error) {
 	link := &Link{
 		URL:       url,
 		Code:      code,
-		CreatedAt: time.Now(),
+		CreatedAt: time.Now().UTC(),
 	}
 
 	if err := link.Validate(); err != nil {
