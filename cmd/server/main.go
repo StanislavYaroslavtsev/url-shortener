@@ -22,6 +22,12 @@ import (
 )
 
 func main() {
+	// Set up structured logging with slog
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	slog.SetDefault(logger)
+
 	cfg := config.GetConfig()
 
 	var repo repository.LinkRepository
