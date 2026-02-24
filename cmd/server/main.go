@@ -36,7 +36,7 @@ func main() {
 		pgRepo, err := repository.NewPostgresRepository(cfg)
 		if err != nil {
 			slog.Error("Failed to connect to postgres", "error", err)
-			panic(err)
+			os.Exit(1)
 		}
 
 		slog.Info("Using PostgreSQL repository")
