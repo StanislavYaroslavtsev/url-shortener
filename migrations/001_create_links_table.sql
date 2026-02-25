@@ -1,7 +1,5 @@
 CREATE TABLE IF NOT EXISTS links (
-    code VARCHAR(16) PRIMARY KEY,
+    code VARCHAR(6) PRIMARY KEY,
     url TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL
 );
-
-CREATE INDEX IF NOT EXISTS idx_links_url ON links (url);
