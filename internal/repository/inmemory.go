@@ -18,23 +18,23 @@ func NewInMemoryRepository() *InMemoryRepository {
 	}
 }
 
-func (repo *InMemoryRepository) Save(_ context.Context, link *domain.Link) error {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+func (r *InMemoryRepository) Save(_ context.Context, link *domain.Link) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
-	if _, exists := repo.links[link.Code]; exists {
+	if _, exists := r.links[link.Code]; exists {
 		return ErrCodeExists
 	}
 
-	repo.links[link.Code] = *link
+	r.links[link.Code] = *link
 	return nil
 }
 
-func (repo *InMemoryRepository) Get(_ context.Context, code string) (*domain.Link, error) {
-	repo.mu.RLock()
-	defer repo.mu.RUnlock()
+func (r *InMemoryRepository) Get(_ context.Context, code string) (*domain.Link, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	link, exists := repo.links[code]
+	link, exists := r.links[code]
 	if !exists {
 		return nil, ErrLinkNotFound
 	}
@@ -42,15 +42,19 @@ func (repo *InMemoryRepository) Get(_ context.Context, code string) (*domain.Lin
 	return &link, nil
 }
 
-func (repo *InMemoryRepository) Delete(_ context.Context, code string) error {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+func (r *InMemoryRepository) Delete(_ context.Context, code string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
-	_, exists := repo.links[code]
+	_, exists := r.links[code]
 	if !exists {
 		return ErrLinkNotFound
 	}
 
-	delete(repo.links, code)
+	delete(r.links, code)
+	return nil
+}
+
+func (r *InMemoryRepository) Close() error {
 	return nil
 }

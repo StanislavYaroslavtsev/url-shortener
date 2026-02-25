@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -104,15 +103,14 @@ func main() {
 
 	if err = memCache.Close(); err != nil {
 		slog.Error("Failed to close cache", "error", err)
+	} else {
+		slog.Info("Cache closed")
 	}
-	slog.Info("Cache closed")
 
-	if pgRepo, ok := repo.(io.Closer); ok {
-		if err := pgRepo.Close(); err != nil {
-			slog.Error("Failed to close postgres connection", "error", err)
-		} else {
-			slog.Info("Postgres connection closed")
-		}
+	if err = repo.Close(); err != nil {
+		slog.Error("Failed to close repository", "error", err)
+	} else {
+		slog.Info("Database connection closed")
 	}
 
 	slog.Info("Server stopped")
