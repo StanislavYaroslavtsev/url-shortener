@@ -98,11 +98,13 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
 	defer cancel()
 
-	if err := server.Shutdown(ctx); err != nil {
+	if err = server.Shutdown(ctx); err != nil {
 		slog.Error("Server forced to shutdown", "error", err)
 	}
 
-	memCache.Close()
+	if err = memCache.Close(); err != nil {
+		slog.Error("Failed to close cache", "error", err)
+	}
 	slog.Info("Cache closed")
 
 	if pgRepo, ok := repo.(io.Closer); ok {

@@ -18,7 +18,7 @@ type InMemoryCache struct {
 
 type Item struct {
 	link      *domain.Link
-	expiresAt int64
+	expiresAt time.Time
 }
 
 func NewInMemoryCache(ttl time.Duration, cleanupInterval time.Duration) *InMemoryCache {
@@ -34,18 +34,18 @@ func NewInMemoryCache(ttl time.Duration, cleanupInterval time.Duration) *InMemor
 	return cache
 }
 
-func (cache *InMemoryCache) Set(ctx context.Context, code string, link *domain.Link) error {
+func (cache *InMemoryCache) Set(_ context.Context, code string, link *domain.Link) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
 	cache.store[code] = Item{
 		link:      link,
-		expiresAt: time.Now().Add(cache.ttl).Unix(),
+		expiresAt: time.Now().UTC().Add(cache.ttl),
 	}
 	return nil
 }
 
-func (cache *InMemoryCache) Get(ctx context.Context, code string) (*domain.Link, error) {
+func (cache *InMemoryCache) Get(_ context.Context, code string) (*domain.Link, error) {
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
 
@@ -54,7 +54,7 @@ func (cache *InMemoryCache) Get(ctx context.Context, code string) (*domain.Link,
 		return nil, fmt.Errorf("code '%s' not found", code)
 	}
 
-	if time.Now().Unix() > item.expiresAt {
+	if time.Now().UTC().After(item.expiresAt) {
 		return nil, fmt.Errorf("code '%s' expired", code)
 	}
 
@@ -65,16 +65,17 @@ func (cache *InMemoryCache) deleteExpired() {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
-	now := time.Now().Unix()
+	now := time.Now().UTC()
 	for key, item := range cache.store {
-		if now > item.expiresAt {
+		if now.After(item.expiresAt) {
 			delete(cache.store, key)
 		}
 	}
 }
 
-func (cache *InMemoryCache) Close() {
+func (cache *InMemoryCache) Close() error {
 	if cache.cleaner != nil {
 		cache.cleaner.Stop()
 	}
+	return nil
 }
