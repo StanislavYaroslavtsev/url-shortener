@@ -2,7 +2,8 @@ package service
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/rand"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -23,31 +24,38 @@ func NewLinkService(repo repository.LinkRepository, cache cache.Cache) *LinkServ
 	}
 }
 
+const maxCodeGenerationAttempts = 10
+
 func (s *LinkService) Create(ctx context.Context, url string) (*domain.Link, error) {
-	if existing, err := s.repo.FindByURL(ctx, url); err == nil {
-		_ = s.cache.Set(ctx, existing.Code, existing)
-		return existing, nil
+	for range maxCodeGenerationAttempts {
+		code, err := generateCode()
+		if err != nil {
+			return nil, err
+		}
+
+		link, err := domain.NewLink(url, code)
+		if err != nil {
+			return nil, err
+		}
+
+		if err = s.repo.Save(ctx, link); err != nil {
+			if errors.Is(err, repository.ErrCodeExists) {
+				continue
+			}
+			return nil, err
+		}
+
+		if err = s.cache.Set(ctx, code, link); err != nil {
+			slog.Warn("Failed to write to cache",
+				"code", code,
+				"error", err,
+			)
+		}
+
+		return link, nil
 	}
 
-	code := GenerateCode(url)
-
-	link, err := domain.NewLink(url, code)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = s.repo.Save(ctx, link); err != nil {
-		return nil, err
-	}
-
-	if err = s.cache.Set(ctx, code, link); err != nil {
-		slog.Warn("Failed to write to cache",
-			"code", code,
-			"error", err,
-		)
-	}
-
-	return link, nil
+	return nil, fmt.Errorf("failed to generate unique code after %d attempts", maxCodeGenerationAttempts)
 }
 
 func (s *LinkService) Get(ctx context.Context, code string) (*domain.Link, error) {
@@ -70,7 +78,17 @@ func (s *LinkService) Get(ctx context.Context, code string) (*domain.Link, error
 	return link, nil
 }
 
-func GenerateCode(url string) string {
-	hash := md5.Sum([]byte(url))
-	return fmt.Sprintf("%x", hash)[:6]
+const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+func generateCode() (string, error) {
+	result := make([]byte, 6)
+	if _, err := rand.Read(result); err != nil {
+		return "", fmt.Errorf("failed to generate random code: %w", err)
+	}
+
+	for i := range result {
+		result[i] = charset[result[i]%byte(len(charset))]
+	}
+
+	return string(result), nil
 }
