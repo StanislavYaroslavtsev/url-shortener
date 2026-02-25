@@ -36,7 +36,7 @@ func main() {
 	var repo repository.LinkRepository
 
 	if cfg.Database.UsePostgres {
-		pgRepo, err := repository.NewPostgresRepository(cfg)
+		pgRepo, err := repository.NewPostgresRepository(cfg.Database)
 		if err != nil {
 			slog.Error("Failed to connect to postgres", "error", err)
 			os.Exit(1)

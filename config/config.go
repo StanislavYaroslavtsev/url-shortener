@@ -33,13 +33,17 @@ type AppConfig struct {
 }
 
 type DatabaseConfig struct {
-	UsePostgres bool   `mapstructure:"use_postgres"`
-	Host        string `mapstructure:"host"`
-	Port        int    `mapstructure:"port"`
-	User        string `mapstructure:"user"`
-	Password    string `mapstructure:"password"`
-	DBName      string `mapstructure:"dbname"`
-	SSLMode     string `mapstructure:"ssl_mode"`
+	UsePostgres     bool          `mapstructure:"use_postgres"`
+	Host            string        `mapstructure:"host"`
+	Port            int           `mapstructure:"port"`
+	User            string        `mapstructure:"user"`
+	Password        string        `mapstructure:"password"`
+	DBName          string        `mapstructure:"dbname"`
+	SSLMode         string        `mapstructure:"ssl_mode"`
+	MaxOpenConns    int           `mapstructure:"max_open_conns"`
+	MaxIdleConns    int           `mapstructure:"max_idle_conns"`
+	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime"`
+	ConnMaxIdleTime time.Duration `mapstructure:"conn_max_idle_time"`
 }
 
 type CacheConfig struct {
@@ -118,6 +122,10 @@ func setDefaults() {
 	viper.SetDefault("database.password", "")
 	viper.SetDefault("database.dbname", "url_shortener")
 	viper.SetDefault("database.ssl_mode", "disable")
+	viper.SetDefault("database.max_open_conns", 25)
+	viper.SetDefault("database.max_idle_conns", 5)
+	viper.SetDefault("database.conn_max_lifetime", "5m")
+	viper.SetDefault("database.conn_max_idle_time", "1m")
 
 	viper.SetDefault("cache.ttl", "24h")
 	viper.SetDefault("cache.cleanup_interval", "1m")
