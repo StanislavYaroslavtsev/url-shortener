@@ -20,7 +20,6 @@ import (
 )
 
 func main() {
-	// Set up structured logging with slog
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
@@ -32,20 +31,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	var repo repository.LinkRepository
-
-	if cfg.Database.UsePostgres {
-		pgRepo, err := repository.NewPostgresRepository(cfg.Database)
-		if err != nil {
-			slog.Error("Failed to connect to postgres", "error", err)
-			os.Exit(1)
-		}
-
-		slog.Info("Using PostgreSQL repository")
-		repo = pgRepo
-	} else {
-		slog.Info("Using in-memory repository")
-		repo = repository.NewInMemoryRepository()
+	repo, err := initRepository(cfg.Database)
+	if err != nil {
+		slog.Error("Failed to initialize repository", "error", err)
+		os.Exit(1)
 	}
 
 	memCache := cache.NewInMemoryCache(cfg.Cache.TTL, cfg.Cache.CleanupInterval)
@@ -114,4 +103,20 @@ func main() {
 	}
 
 	slog.Info("Server stopped")
+}
+
+func initRepository(cfg config.DatabaseConfig) (repository.LinkRepository, error) {
+	if cfg.UsePostgres {
+		repo, err := repository.NewPostgresRepository(cfg)
+
+		if err != nil {
+			return nil, err
+		}
+
+		slog.Info("Using PostgreSQL repository")
+		return repo, nil
+	}
+
+	slog.Info("Using in-memory repository")
+	return repository.NewInMemoryRepository(), nil
 }
