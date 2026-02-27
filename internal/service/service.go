@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/cache"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
@@ -26,14 +27,14 @@ func NewLinkService(repo repository.LinkRepository, cache cache.Cache) *LinkServ
 
 const maxCodeGenerationAttempts = 10
 
-func (s *LinkService) Create(ctx context.Context, url string) (*domain.Link, error) {
+func (s *LinkService) Create(ctx context.Context, url string, expiresAt *time.Time) (*domain.Link, error) {
 	for range maxCodeGenerationAttempts {
 		code, err := generateCode()
 		if err != nil {
 			return nil, err
 		}
 
-		link, err := domain.NewLink(url, code)
+		link, err := domain.NewLink(url, code, expiresAt)
 		if err != nil {
 			return nil, err
 		}
@@ -60,12 +61,19 @@ func (s *LinkService) Create(ctx context.Context, url string) (*domain.Link, err
 
 func (s *LinkService) Get(ctx context.Context, code string) (*domain.Link, error) {
 	if cached, err := s.cache.Get(ctx, code); err == nil {
+		if cached.IsExpired() {
+			return nil, domain.ErrLinkExpired
+		}
 		return cached, nil
 	}
 
 	link, err := s.repo.Get(ctx, code)
 	if err != nil {
 		return nil, err
+	}
+
+	if link.IsExpired() {
+		return nil, domain.ErrLinkExpired
 	}
 
 	if err = s.cache.Set(ctx, code, link); err != nil {

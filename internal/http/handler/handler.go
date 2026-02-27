@@ -49,7 +49,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := h.service.Create(r.Context(), req.URL)
+	link, err := h.service.Create(r.Context(), req.URL, req.ExpiresAt)
 
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidLink) {
@@ -83,6 +83,8 @@ func (h *Handler) RedirectURL(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		switch {
+		case errors.Is(err, domain.ErrLinkExpired):
+			http.Error(w, "Link expired", http.StatusGone)
 		case errors.Is(err, repository.ErrLinkNotFound):
 			http.Error(w, "Link not found", http.StatusNotFound)
 		default:

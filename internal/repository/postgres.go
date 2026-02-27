@@ -56,8 +56,8 @@ func NewPostgresRepository(cfg config.DatabaseConfig) (*PostgresRepository, erro
 }
 
 func (r *PostgresRepository) Save(ctx context.Context, link *domain.Link) error {
-	query := `INSERT INTO links (code, url, created_at) VALUES ($1, $2, $3)`
-	_, err := r.pool.Exec(ctx, query, link.Code, link.URL, link.CreatedAt)
+	query := `INSERT INTO links (code, url, created_at, expires_at) VALUES ($1, $2, $3, $4)`
+	_, err := r.pool.Exec(ctx, query, link.Code, link.URL, link.CreatedAt, link.ExpiresAt)
 
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -72,11 +72,11 @@ func (r *PostgresRepository) Save(ctx context.Context, link *domain.Link) error 
 }
 
 func (r *PostgresRepository) Get(ctx context.Context, code string) (*domain.Link, error) {
-	query := `SELECT code, url, created_at FROM links WHERE code = $1`
+	query := `SELECT code, url, created_at, expires_at FROM links WHERE code = $1`
 	row := r.pool.QueryRow(ctx, query, code)
 
 	var link domain.Link
-	if err := row.Scan(&link.Code, &link.URL, &link.CreatedAt); err != nil {
+	if err := row.Scan(&link.Code, &link.URL, &link.CreatedAt, &link.ExpiresAt); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrLinkNotFound
 		}

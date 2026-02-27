@@ -12,6 +12,7 @@ var validate = validator.New()
 type Link struct {
 	URL       string `validate:"required,url"`
 	Code      string `validate:"required"`
+	ExpiresAt *time.Time
 	CreatedAt time.Time
 }
 
@@ -23,10 +24,11 @@ func (l *Link) Validate() error {
 	return nil
 }
 
-func NewLink(url, code string) (*Link, error) {
+func NewLink(url, code string, expiresAt *time.Time) (*Link, error) {
 	link := &Link{
 		URL:       url,
 		Code:      code,
+		ExpiresAt: expiresAt,
 		CreatedAt: time.Now().UTC(),
 	}
 
@@ -35,4 +37,11 @@ func NewLink(url, code string) (*Link, error) {
 	}
 
 	return link, nil
+}
+
+func (l *Link) IsExpired() bool {
+	if l.ExpiresAt == nil {
+		return false
+	}
+	return time.Now().UTC().After(*l.ExpiresAt)
 }
