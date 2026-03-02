@@ -47,6 +47,8 @@ type DatabaseConfig struct {
 }
 
 type CacheConfig struct {
+	UseRedis        bool          `mapstructure:"use_redis"`
+	RedisAddr       string        `mapstructure:"redis_addr"`
 	TTL             time.Duration `mapstructure:"ttl"`
 	CleanupInterval time.Duration `mapstructure:"cleanup_interval"`
 }
@@ -92,6 +94,7 @@ func Init() (*Config, error) {
 		slog.Info("Config loaded",
 			"env", cfg.App.Env,
 			"use_postgres", cfg.Database.UsePostgres,
+			"use_redis", cfg.Cache.UseRedis,
 			"server_port", cfg.Server.Port,
 		)
 	})
@@ -127,6 +130,8 @@ func setDefaults() {
 	viper.SetDefault("database.conn_max_lifetime", "5m")
 	viper.SetDefault("database.conn_max_idle_time", "1m")
 
+	viper.SetDefault("cache.use_redis", false)
+	viper.SetDefault("cache.redis_addr", "redis:6379")
 	viper.SetDefault("cache.ttl", "24h")
 	viper.SetDefault("cache.cleanup_interval", "1m")
 }
@@ -139,4 +144,7 @@ func bindEnvVars() {
 	_ = viper.BindEnv("database.dbname", "POSTGRES_DB")
 	_ = viper.BindEnv("database.ssl_mode", "POSTGRES_SSL_MODE")
 	_ = viper.BindEnv("app.env", "APP_ENV")
+
+	_ = viper.BindEnv("cache.use_redis", "CACHE_USE_REDIS")
+	_ = viper.BindEnv("cache.redis_addr", "REDIS_ADDR")
 }

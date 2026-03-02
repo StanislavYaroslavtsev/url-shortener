@@ -37,9 +37,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	memCache := cache.NewInMemoryCache(cfg.Cache.TTL, cfg.Cache.CleanupInterval)
+	var appCache cache.Cache
 
-	svc := service.NewLinkService(repo, memCache)
+	if cfg.Cache.UseRedis {
+		redisCache, err := cache.NewRedisCache(cfg.Cache.RedisAddr, cfg.Cache.TTL)
+		if err != nil {
+			slog.Error("Failed to connect to redis", "error", err)
+			os.Exit(1)
+		}
+
+		slog.Info("Using Redis cache")
+		appCache = redisCache
+	} else {
+		slog.Info("Using in-memory cache")
+		appCache = cache.NewInMemoryCache(cfg.Cache.TTL, cfg.Cache.CleanupInterval)
+	}
+
+	svc := service.NewLinkService(repo, appCache)
 	h := handler.NewHandler(svc, cfg.App.BaseURL)
 
 	router := chi.NewRouter()
@@ -90,7 +104,7 @@ func main() {
 		slog.Error("Server forced to shutdown", "error", err)
 	}
 
-	if err = memCache.Close(); err != nil {
+	if err = appCache.Close(); err != nil {
 		slog.Error("Failed to close cache", "error", err)
 	} else {
 		slog.Info("Cache closed")
