@@ -13,3 +13,6 @@ migrate-down:
 
 migrate-status:
 	goose status
+
+lint:
+	golangci-lint run
