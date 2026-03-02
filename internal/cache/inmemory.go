@@ -2,7 +2,6 @@ package cache
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -51,11 +50,11 @@ func (cache *InMemoryCache) Get(_ context.Context, code string) (*domain.Link, e
 
 	item, ok := cache.store[code]
 	if !ok {
-		return nil, fmt.Errorf("code '%s' not found", code)
+		return nil, ErrCacheMiss
 	}
 
 	if time.Now().UTC().After(item.expiresAt) {
-		return nil, fmt.Errorf("code '%s' expired", code)
+		return nil, ErrCacheExpired
 	}
 
 	return item.link, nil

@@ -15,12 +15,12 @@ import (
 )
 
 type Handler struct {
-	service  *service.LinkService
+	service  service.LinkServiceInterface
 	baseURL  string
 	validate *validator.Validate
 }
 
-func NewHandler(svc *service.LinkService, baseURL string) *Handler {
+func NewHandler(svc service.LinkServiceInterface, baseURL string) *Handler {
 	return &Handler{
 		service:  svc,
 		baseURL:  baseURL,

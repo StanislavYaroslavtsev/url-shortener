@@ -39,6 +39,19 @@ func NewPostgresRepository(cfg config.DatabaseConfig) (*PostgresRepository, erro
 	poolCfg.MaxConnLifetime = cfg.ConnMaxLifetime
 	poolCfg.MaxConnIdleTime = cfg.ConnMaxIdleTime
 
+	return newFromPoolConfig(poolCfg)
+}
+
+func NewPostgresRepositoryFromDSN(dsn string) (*PostgresRepository, error) {
+	poolCfg, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse postgres config: %w", err)
+	}
+
+	return newFromPoolConfig(poolCfg)
+}
+
+func newFromPoolConfig(poolCfg *pgxpool.Config) (*PostgresRepository, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -81,6 +94,12 @@ func (r *PostgresRepository) Get(ctx context.Context, code string) (*domain.Link
 			return nil, ErrLinkNotFound
 		}
 		return nil, fmt.Errorf("failed to get link: %w", err)
+	}
+
+	link.CreatedAt = link.CreatedAt.UTC()
+	if link.ExpiresAt != nil {
+		utc := link.ExpiresAt.UTC()
+		link.ExpiresAt = &utc
 	}
 
 	return &link, nil

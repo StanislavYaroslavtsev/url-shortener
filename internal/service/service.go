@@ -13,6 +13,11 @@ import (
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/repository"
 )
 
+type LinkServiceInterface interface {
+	Create(ctx context.Context, url string, expiresAt *time.Time) (*domain.Link, error)
+	Get(ctx context.Context, code string) (*domain.Link, error)
+}
+
 type LinkService struct {
 	repo  repository.LinkRepository
 	cache cache.Cache

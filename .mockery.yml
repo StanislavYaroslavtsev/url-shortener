@@ -1,0 +1,34 @@
+all: false
+dir: '{{.InterfaceDir}}'
+filename: mocks_test.go
+force-file-write: true
+formatter: goimports
+generate: true
+include-auto-generated: false
+log-level: info
+structname: '{{.Mock}}{{.InterfaceName}}'
+pkgname: '{{.SrcPackageName}}'
+recursive: false
+require-template-schema-exists: true
+template: testify
+template-schema: '{{.Template}}.schema.json'
+packages:
+  github.com/StanislavYaroslavtsev/url-shortener/internal/repository:
+    config:
+      all: true
+      dir: internal/service/mocks
+      pkgname: mocks
+      filename: mock_repository.go
+  github.com/StanislavYaroslavtsev/url-shortener/internal/cache:
+    config:
+      all: true
+      dir: internal/service/mocks
+      pkgname: mocks
+      filename: mock_cache.go
+  github.com/StanislavYaroslavtsev/url-shortener/internal/service:
+    interfaces:
+      LinkServiceInterface:
+        config:
+          dir: internal/http/handler/mocks
+          pkgname: mocks
+          filename: mock_service.go
