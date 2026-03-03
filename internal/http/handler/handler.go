@@ -49,16 +49,18 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := h.service.Create(r.Context(), req.URL, req.ExpiresAt)
+	link, err := h.service.Create(r.Context(), req.URL, req.Alias, req.ExpiresAt)
 
 	if err != nil {
-		if errors.Is(err, domain.ErrInvalidLink) {
-			http.Error(w, "Invalid URL format", http.StatusBadRequest)
-			return
+		switch {
+		case errors.Is(err, domain.ErrInvalidLink):
+			http.Error(w, "Invalid format", http.StatusBadRequest)
+		case errors.Is(err, repository.ErrCodeExists):
+			http.Error(w, "Alias already taken", http.StatusConflict)
+		default:
+			slog.Error("Unexpected error", "error", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
-
-		slog.Error("Unexpected error", "error", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 

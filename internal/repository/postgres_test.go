@@ -56,7 +56,7 @@ func (s *PostgresRepoTestSuite) SetupTest() {
 }
 
 func (s *PostgresRepoTestSuite) TestSave_SavesLink() {
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(s.T(), err)
 
 	err = s.repo.Save(s.ctx, link)
@@ -69,7 +69,7 @@ func (s *PostgresRepoTestSuite) TestSave_SavesLink() {
 }
 
 func (s *PostgresRepoTestSuite) TestSave_CodeExists_ReturnsError() {
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(s.T(), err)
 
 	err = s.repo.Save(s.ctx, link)
@@ -80,7 +80,7 @@ func (s *PostgresRepoTestSuite) TestSave_CodeExists_ReturnsError() {
 }
 
 func (s *PostgresRepoTestSuite) TestGet_ReturnsLink() {
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(s.T(), err)
 
 	err = s.repo.Save(s.ctx, link)
@@ -97,7 +97,7 @@ func (s *PostgresRepoTestSuite) TestGet_NoSuchCode_ReturnsError() {
 }
 
 func (s *PostgresRepoTestSuite) TestDelete_RemovesLink() {
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(s.T(), err)
 
 	err = s.repo.Save(s.ctx, link)

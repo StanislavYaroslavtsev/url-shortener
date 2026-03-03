@@ -12,7 +12,7 @@ import (
 func TestInMemoryRepository_Save_SavesLink(t *testing.T) {
 	repo := NewInMemoryRepository()
 	ctx := context.Background()
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
 
 	err = repo.Save(ctx, link)
@@ -26,7 +26,7 @@ func TestInMemoryRepository_Save_SavesLink(t *testing.T) {
 func TestInMemoryRepository_Save_CodeExists_ReturnsError(t *testing.T) {
 	repo := NewInMemoryRepository()
 	ctx := context.Background()
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
 
 	err = repo.Save(ctx, link)
@@ -39,7 +39,7 @@ func TestInMemoryRepository_Save_CodeExists_ReturnsError(t *testing.T) {
 func TestInMemoryRepository_Get_ReturnsLink(t *testing.T) {
 	repo := NewInMemoryRepository()
 	ctx := context.Background()
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
 
 	err = repo.Save(ctx, link)
@@ -61,7 +61,7 @@ func TestInMemoryRepository_Get_NoSuchCode_ReturnsError(t *testing.T) {
 func TestInMemoryRepository_Delete_RemovesLink(t *testing.T) {
 	repo := NewInMemoryRepository()
 	ctx := context.Background()
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
 
 	err = repo.Save(ctx, link)

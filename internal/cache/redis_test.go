@@ -54,7 +54,7 @@ func (s *RedisCacheTestSuite) TearDownSuite() {
 }
 
 func (s *RedisCacheTestSuite) TestSet_Get_ReturnsLink() {
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(s.T(), err)
 
 	err = s.cache.Set(s.ctx, "abc123", link)
@@ -80,7 +80,7 @@ func (s *RedisCacheTestSuite) TestGet_ExpiredKey_ReturnsCacheMiss() {
 		assert.NoError(s.T(), cache.Close())
 	})
 
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(s.T(), err)
 
 	err = cache.Set(s.ctx, "abc123", link)

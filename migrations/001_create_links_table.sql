@@ -1,7 +1,7 @@
 -- +goose Up
 CREATE TABLE links (
-    code VARCHAR(6) PRIMARY KEY,
-    url TEXT NOT NULL,
+    code VARCHAR(16) PRIMARY KEY,
+    url VARCHAR(2048) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL
 );
 

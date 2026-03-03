@@ -23,7 +23,7 @@ func TestLinkService_Create_ReturnsLink(t *testing.T) {
 
 	svc := NewLinkService(repo, cache)
 
-	link, err := svc.Create(context.Background(), "https://google.com", nil)
+	link, err := svc.Create(context.Background(), "https://google.com", nil, nil)
 
 	require.NoError(t, err)
 	assert.Equal(t, "https://google.com", link.URL)
@@ -35,7 +35,53 @@ func TestLinkService_Create_InvalidURL_ReturnsError(t *testing.T) {
 	cache := mocks.NewMockCache(t)
 
 	svc := NewLinkService(repo, cache)
-	_, err := svc.Create(context.Background(), "not-a-url", nil)
+	_, err := svc.Create(context.Background(), "not-a-url", nil, nil)
+
+	assert.ErrorIs(t, err, domain.ErrInvalidLink)
+}
+
+func TestLinkService_Create_WithAlias_ReturnsLink(t *testing.T) {
+	repo := mocks.NewMockLinkRepository(t)
+	cache := mocks.NewMockCache(t)
+
+	alias := "my-link"
+
+	repo.EXPECT().Save(mock.Anything, mock.Anything).Return(nil)
+	cache.EXPECT().Set(mock.Anything, alias, mock.Anything).Return(nil)
+
+	svc := NewLinkService(repo, cache)
+
+	link, err := svc.Create(context.Background(), "https://google.com", &alias, nil)
+
+	require.NoError(t, err)
+	assert.Equal(t, alias, link.Code)
+	assert.Equal(t, &alias, link.Alias)
+}
+
+func TestLinkService_Create_AliasAlreadyTaken_ReturnsError(t *testing.T) {
+	repo := mocks.NewMockLinkRepository(t)
+	cache := mocks.NewMockCache(t)
+
+	alias := "my-link"
+
+	repo.EXPECT().Save(mock.Anything, mock.Anything).Return(repository.ErrCodeExists)
+
+	svc := NewLinkService(repo, cache)
+
+	_, err := svc.Create(context.Background(), "https://google.com", &alias, nil)
+
+	assert.ErrorIs(t, err, repository.ErrCodeExists)
+}
+
+func TestLinkService_Create_InvalidAlias_ReturnsError(t *testing.T) {
+	repo := mocks.NewMockLinkRepository(t)
+	cache := mocks.NewMockCache(t)
+
+	alias := "ab"
+
+	svc := NewLinkService(repo, cache)
+
+	_, err := svc.Create(context.Background(), "https://google.com", &alias, nil)
 
 	assert.ErrorIs(t, err, domain.ErrInvalidLink)
 }
@@ -44,7 +90,7 @@ func TestLinkService_Get_ReturnsCachedLink(t *testing.T) {
 	repo := mocks.NewMockLinkRepository(t)
 	cache := mocks.NewMockCache(t)
 
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
 
 	cache.EXPECT().Get(mock.Anything, "abc123").Return(link, nil)
@@ -60,7 +106,7 @@ func TestLinkService_Get_CacheMiss_ReturnsFromRepo(t *testing.T) {
 	repo := mocks.NewMockLinkRepository(t)
 	cache := mocks.NewMockCache(t)
 
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
 
 	cache.EXPECT().Get(mock.Anything, "abc123").Return(nil, appcache.ErrCacheMiss)
@@ -79,7 +125,7 @@ func TestLinkService_Get_ExpiredLink_ReturnsError(t *testing.T) {
 	cache := mocks.NewMockCache(t)
 
 	expiresAt := time.Now().UTC().Add(-1 * time.Hour)
-	link, err := domain.NewLink("https://google.com", "abc123", &expiresAt)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, &expiresAt)
 	require.NoError(t, err)
 
 	cache.EXPECT().Get(mock.Anything, "abc123").Return(link, nil)

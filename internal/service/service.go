@@ -14,7 +14,7 @@ import (
 )
 
 type LinkServiceInterface interface {
-	Create(ctx context.Context, url string, expiresAt *time.Time) (*domain.Link, error)
+	Create(ctx context.Context, url string, alias *string, expiresAt *time.Time) (*domain.Link, error)
 	Get(ctx context.Context, code string) (*domain.Link, error)
 	Ping(ctx context.Context) map[string]error
 }
@@ -33,14 +33,31 @@ func NewLinkService(repo repository.LinkRepository, cache cache.Cache) *LinkServ
 
 const maxCodeGenerationAttempts = 10
 
-func (s *LinkService) Create(ctx context.Context, url string, expiresAt *time.Time) (*domain.Link, error) {
+func (s *LinkService) Create(ctx context.Context, url string, alias *string, expiresAt *time.Time) (*domain.Link, error) {
+	if alias != nil {
+		link, err := domain.NewLink(url, *alias, alias, expiresAt)
+		if err != nil {
+			return nil, err
+		}
+
+		if err = s.repo.Save(ctx, link); err != nil {
+			return nil, err
+		}
+
+		if err = s.cache.Set(ctx, *alias, link); err != nil {
+			slog.Warn("Failed to write to cache", "code", *alias, "error", err)
+		}
+
+		return link, nil
+	}
+
 	for range maxCodeGenerationAttempts {
 		code, err := generateCode()
 		if err != nil {
 			return nil, err
 		}
 
-		link, err := domain.NewLink(url, code, expiresAt)
+		link, err := domain.NewLink(url, code, nil, expiresAt)
 		if err != nil {
 			return nil, err
 		}

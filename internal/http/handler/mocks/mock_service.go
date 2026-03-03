@@ -40,8 +40,8 @@ func (_m *MockLinkServiceInterface) EXPECT() *MockLinkServiceInterface_Expecter 
 }
 
 // Create provides a mock function for the type MockLinkServiceInterface
-func (_mock *MockLinkServiceInterface) Create(ctx context.Context, url string, expiresAt *time.Time) (*domain.Link, error) {
-	ret := _mock.Called(ctx, url, expiresAt)
+func (_mock *MockLinkServiceInterface) Create(ctx context.Context, url string, alias *string, expiresAt *time.Time) (*domain.Link, error) {
+	ret := _mock.Called(ctx, url, alias, expiresAt)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -49,18 +49,18 @@ func (_mock *MockLinkServiceInterface) Create(ctx context.Context, url string, e
 
 	var r0 *domain.Link
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *time.Time) (*domain.Link, error)); ok {
-		return returnFunc(ctx, url, expiresAt)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time) (*domain.Link, error)); ok {
+		return returnFunc(ctx, url, alias, expiresAt)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *time.Time) *domain.Link); ok {
-		r0 = returnFunc(ctx, url, expiresAt)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time) *domain.Link); ok {
+		r0 = returnFunc(ctx, url, alias, expiresAt)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*domain.Link)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *time.Time) error); ok {
-		r1 = returnFunc(ctx, url, expiresAt)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *string, *time.Time) error); ok {
+		r1 = returnFunc(ctx, url, alias, expiresAt)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -75,12 +75,13 @@ type MockLinkServiceInterface_Create_Call struct {
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
 //   - url string
+//   - alias *string
 //   - expiresAt *time.Time
-func (_e *MockLinkServiceInterface_Expecter) Create(ctx interface{}, url interface{}, expiresAt interface{}) *MockLinkServiceInterface_Create_Call {
-	return &MockLinkServiceInterface_Create_Call{Call: _e.mock.On("Create", ctx, url, expiresAt)}
+func (_e *MockLinkServiceInterface_Expecter) Create(ctx interface{}, url interface{}, alias interface{}, expiresAt interface{}) *MockLinkServiceInterface_Create_Call {
+	return &MockLinkServiceInterface_Create_Call{Call: _e.mock.On("Create", ctx, url, alias, expiresAt)}
 }
 
-func (_c *MockLinkServiceInterface_Create_Call) Run(run func(ctx context.Context, url string, expiresAt *time.Time)) *MockLinkServiceInterface_Create_Call {
+func (_c *MockLinkServiceInterface_Create_Call) Run(run func(ctx context.Context, url string, alias *string, expiresAt *time.Time)) *MockLinkServiceInterface_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -90,14 +91,19 @@ func (_c *MockLinkServiceInterface_Create_Call) Run(run func(ctx context.Context
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 *time.Time
+		var arg2 *string
 		if args[2] != nil {
-			arg2 = args[2].(*time.Time)
+			arg2 = args[2].(*string)
+		}
+		var arg3 *time.Time
+		if args[3] != nil {
+			arg3 = args[3].(*time.Time)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -108,7 +114,7 @@ func (_c *MockLinkServiceInterface_Create_Call) Return(link *domain.Link, err er
 	return _c
 }
 
-func (_c *MockLinkServiceInterface_Create_Call) RunAndReturn(run func(ctx context.Context, url string, expiresAt *time.Time) (*domain.Link, error)) *MockLinkServiceInterface_Create_Call {
+func (_c *MockLinkServiceInterface_Create_Call) RunAndReturn(run func(ctx context.Context, url string, alias *string, expiresAt *time.Time) (*domain.Link, error)) *MockLinkServiceInterface_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }

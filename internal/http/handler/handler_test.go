@@ -29,13 +29,26 @@ func newRequest(t *testing.T, method, url string, body any) *http.Request {
 	return httptest.NewRequest(method, url, bytes.NewReader(data))
 }
 
+func healthRequest(t *testing.T, h *Handler) (*httptest.ResponseRecorder, map[string]any) {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	rec := httptest.NewRecorder()
+	h.Health(rec, req)
+
+	var resp map[string]any
+	err := json.Unmarshal(rec.Body.Bytes(), &resp)
+	require.NoError(t, err)
+
+	return rec, resp
+}
+
 func TestHandler_ShortenURL_ReturnsShortURL(t *testing.T) {
 	h, svc := newTestHandler(t)
 
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
 
-	svc.EXPECT().Create(mock.Anything, "https://google.com", mock.Anything).Return(link, nil)
+	svc.EXPECT().Create(mock.Anything, "https://google.com", mock.Anything, mock.Anything).Return(link, nil)
 
 	req := newRequest(t, http.MethodPost, "/shorten", map[string]string{
 		"url": "https://google.com",
@@ -50,6 +63,48 @@ func TestHandler_ShortenURL_ReturnsShortURL(t *testing.T) {
 	err = json.Unmarshal(rec.Body.Bytes(), &resp)
 	require.NoError(t, err)
 	assert.Equal(t, "http://localhost:3000/abc123", resp["short_url"])
+}
+
+func TestHandler_ShortenURL_WithAlias_ReturnsShortURL(t *testing.T) {
+	h, svc := newTestHandler(t)
+
+	alias := "my-link"
+	link, err := domain.NewLink("https://google.com", alias, &alias, nil)
+	require.NoError(t, err)
+
+	svc.EXPECT().Create(mock.Anything, "https://google.com", mock.Anything, mock.Anything).Return(link, nil)
+
+	req := newRequest(t, http.MethodPost, "/shorten", map[string]any{
+		"url":   "https://google.com",
+		"alias": alias,
+	})
+	rec := httptest.NewRecorder()
+
+	h.ShortenURL(rec, req)
+
+	assert.Equal(t, http.StatusCreated, rec.Code)
+
+	var resp map[string]string
+	err = json.Unmarshal(rec.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	assert.Equal(t, "http://localhost:3000/my-link", resp["short_url"])
+}
+
+func TestHandler_ShortenURL_AliasAlreadyTaken_ReturnsConflict(t *testing.T) {
+	h, svc := newTestHandler(t)
+
+	svc.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, repository.ErrCodeExists)
+
+	req := newRequest(t, http.MethodPost, "/shorten", map[string]any{
+		"url":   "https://google.com",
+		"alias": "my-link",
+	})
+	rec := httptest.NewRecorder()
+
+	h.ShortenURL(rec, req)
+
+	assert.Equal(t, http.StatusConflict, rec.Code)
 }
 
 func TestHandler_ShortenURL_InvalidJSON_ReturnsBadRequest(t *testing.T) {
@@ -79,7 +134,8 @@ func TestHandler_ShortenURL_EmptyURL_ReturnsBadRequest(t *testing.T) {
 func TestHandler_ShortenURL_ServiceError_ReturnsInternalServerError(t *testing.T) {
 	h, svc := newTestHandler(t)
 
-	svc.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).Return(nil, assert.AnError)
+	svc.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, assert.AnError)
 
 	req := newRequest(t, http.MethodPost, "/shorten", map[string]string{
 		"url": "https://google.com",
@@ -94,7 +150,7 @@ func TestHandler_ShortenURL_ServiceError_ReturnsInternalServerError(t *testing.T
 func TestHandler_RedirectURL_Redirects(t *testing.T) {
 	h, svc := newTestHandler(t)
 
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
 
 	svc.EXPECT().Get(mock.Anything, "abc123").Return(link, nil)
@@ -151,16 +207,9 @@ func TestHandler_Health_AllDepsOk_Returns200(t *testing.T) {
 		"cache":    nil,
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
-	rec := httptest.NewRecorder()
-
-	h.Health(rec, req)
+	rec, resp := healthRequest(t, h)
 
 	assert.Equal(t, http.StatusOK, rec.Code)
-
-	var resp map[string]any
-	err := json.Unmarshal(rec.Body.Bytes(), &resp)
-	require.NoError(t, err)
 	assert.Equal(t, "ok", resp["status"])
 }
 
@@ -172,16 +221,9 @@ func TestHandler_Health_DBUnavailable_Returns503(t *testing.T) {
 		"cache":    nil,
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
-	rec := httptest.NewRecorder()
-
-	h.Health(rec, req)
+	rec, resp := healthRequest(t, h)
 
 	assert.Equal(t, http.StatusServiceUnavailable, rec.Code)
-
-	var resp map[string]any
-	err := json.Unmarshal(rec.Body.Bytes(), &resp)
-	require.NoError(t, err)
 	assert.Equal(t, "unavailable", resp["status"])
 }
 
@@ -193,15 +235,8 @@ func TestHandler_Health_CacheUnavailable_Returns503(t *testing.T) {
 		"cache":    assert.AnError,
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
-	rec := httptest.NewRecorder()
-
-	h.Health(rec, req)
+	rec, resp := healthRequest(t, h)
 
 	assert.Equal(t, http.StatusServiceUnavailable, rec.Code)
-
-	var resp map[string]any
-	err := json.Unmarshal(rec.Body.Bytes(), &resp)
-	require.NoError(t, err)
 	assert.Equal(t, "unavailable", resp["status"])
 }

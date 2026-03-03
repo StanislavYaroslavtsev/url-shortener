@@ -20,7 +20,7 @@ func TestInMemoryCache_Set_Get_ReturnsLink(t *testing.T) {
 		assert.NoError(t, cache.Close())
 	})
 
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
 
 	err = cache.Set(context.Background(), "abc123", link)
@@ -47,7 +47,7 @@ func TestInMemoryCache_Get_ExpiredItem_ReturnsCacheExpired(t *testing.T) {
 		assert.NoError(t, cache.Close())
 	})
 
-	link, err := domain.NewLink("https://google.com", "abc123", nil)
+	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
 
 	err = cache.Set(context.Background(), "abc123", link)
