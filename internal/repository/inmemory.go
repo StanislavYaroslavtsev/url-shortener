@@ -55,6 +55,10 @@ func (r *InMemoryRepository) Delete(_ context.Context, code string) error {
 	return nil
 }
 
+func (r *InMemoryRepository) Ping(_ context.Context) error {
+	return nil
+}
+
 func (r *InMemoryRepository) Close() error {
 	return nil
 }

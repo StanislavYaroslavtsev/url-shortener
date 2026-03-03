@@ -180,3 +180,56 @@ func (_c *MockLinkServiceInterface_Get_Call) RunAndReturn(run func(ctx context.C
 	_c.Call.Return(run)
 	return _c
 }
+
+// Ping provides a mock function for the type MockLinkServiceInterface
+func (_mock *MockLinkServiceInterface) Ping(ctx context.Context) map[string]error {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Ping")
+	}
+
+	var r0 map[string]error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) map[string]error); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]error)
+		}
+	}
+	return r0
+}
+
+// MockLinkServiceInterface_Ping_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Ping'
+type MockLinkServiceInterface_Ping_Call struct {
+	*mock.Call
+}
+
+// Ping is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockLinkServiceInterface_Expecter) Ping(ctx interface{}) *MockLinkServiceInterface_Ping_Call {
+	return &MockLinkServiceInterface_Ping_Call{Call: _e.mock.On("Ping", ctx)}
+}
+
+func (_c *MockLinkServiceInterface_Ping_Call) Run(run func(ctx context.Context)) *MockLinkServiceInterface_Ping_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLinkServiceInterface_Ping_Call) Return(stringToErr map[string]error) *MockLinkServiceInterface_Ping_Call {
+	_c.Call.Return(stringToErr)
+	return _c
+}
+
+func (_c *MockLinkServiceInterface_Ping_Call) RunAndReturn(run func(ctx context.Context) map[string]error) *MockLinkServiceInterface_Ping_Call {
+	_c.Call.Return(run)
+	return _c
+}

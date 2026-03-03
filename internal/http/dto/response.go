@@ -14,3 +14,12 @@ func NewShortenResponse(code, baseURL string) ShortenResponse {
 		ShortURL: fmt.Sprintf("%s/%s", strings.TrimSuffix(baseURL, "/"), code),
 	}
 }
+
+type HealthDependency struct {
+	Status string `json:"status"`
+}
+
+type HealthResponse struct {
+	Status       string                      `json:"status"`
+	Dependencies map[string]HealthDependency `json:"dependencies"`
+}

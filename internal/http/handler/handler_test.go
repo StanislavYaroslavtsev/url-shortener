@@ -142,3 +142,66 @@ func TestHandler_RedirectURL_ExpiredLink_Returns410(t *testing.T) {
 
 	assert.Equal(t, http.StatusGone, rec.Code)
 }
+
+func TestHandler_Health_AllDepsOk_Returns200(t *testing.T) {
+	h, svc := newTestHandler(t)
+
+	svc.EXPECT().Ping(mock.Anything).Return(map[string]error{
+		"database": nil,
+		"cache":    nil,
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	rec := httptest.NewRecorder()
+
+	h.Health(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var resp map[string]any
+	err := json.Unmarshal(rec.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	assert.Equal(t, "ok", resp["status"])
+}
+
+func TestHandler_Health_DBUnavailable_Returns503(t *testing.T) {
+	h, svc := newTestHandler(t)
+
+	svc.EXPECT().Ping(mock.Anything).Return(map[string]error{
+		"database": assert.AnError,
+		"cache":    nil,
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	rec := httptest.NewRecorder()
+
+	h.Health(rec, req)
+
+	assert.Equal(t, http.StatusServiceUnavailable, rec.Code)
+
+	var resp map[string]any
+	err := json.Unmarshal(rec.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	assert.Equal(t, "unavailable", resp["status"])
+}
+
+func TestHandler_Health_CacheUnavailable_Returns503(t *testing.T) {
+	h, svc := newTestHandler(t)
+
+	svc.EXPECT().Ping(mock.Anything).Return(map[string]error{
+		"database": nil,
+		"cache":    assert.AnError,
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	rec := httptest.NewRecorder()
+
+	h.Health(rec, req)
+
+	assert.Equal(t, http.StatusServiceUnavailable, rec.Code)
+
+	var resp map[string]any
+	err := json.Unmarshal(rec.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	assert.Equal(t, "unavailable", resp["status"])
+}

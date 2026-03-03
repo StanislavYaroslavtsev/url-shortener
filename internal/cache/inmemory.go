@@ -33,22 +33,22 @@ func NewInMemoryCache(ttl time.Duration, cleanupInterval time.Duration) *InMemor
 	return cache
 }
 
-func (cache *InMemoryCache) Set(_ context.Context, code string, link *domain.Link) error {
-	cache.mu.Lock()
-	defer cache.mu.Unlock()
+func (c *InMemoryCache) Set(_ context.Context, code string, link *domain.Link) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	cache.store[code] = Item{
+	c.store[code] = Item{
 		link:      link,
-		expiresAt: time.Now().UTC().Add(cache.ttl),
+		expiresAt: time.Now().UTC().Add(c.ttl),
 	}
 	return nil
 }
 
-func (cache *InMemoryCache) Get(_ context.Context, code string) (*domain.Link, error) {
-	cache.mu.RLock()
-	defer cache.mu.RUnlock()
+func (c *InMemoryCache) Get(_ context.Context, code string) (*domain.Link, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
-	item, ok := cache.store[code]
+	item, ok := c.store[code]
 	if !ok {
 		return nil, ErrCacheMiss
 	}
@@ -60,21 +60,25 @@ func (cache *InMemoryCache) Get(_ context.Context, code string) (*domain.Link, e
 	return item.link, nil
 }
 
-func (cache *InMemoryCache) deleteExpired() {
-	cache.mu.Lock()
-	defer cache.mu.Unlock()
+func (c *InMemoryCache) deleteExpired() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	now := time.Now().UTC()
-	for key, item := range cache.store {
+	for key, item := range c.store {
 		if now.After(item.expiresAt) {
-			delete(cache.store, key)
+			delete(c.store, key)
 		}
 	}
 }
 
-func (cache *InMemoryCache) Close() error {
-	if cache.cleaner != nil {
-		cache.cleaner.Stop()
+func (c *InMemoryCache) Ping(_ context.Context) error {
+	return nil
+}
+
+func (c *InMemoryCache) Close() error {
+	if c.cleaner != nil {
+		c.cleaner.Stop()
 	}
 	return nil
 }

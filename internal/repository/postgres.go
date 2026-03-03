@@ -120,6 +120,10 @@ func (r *PostgresRepository) Delete(ctx context.Context, code string) error {
 	return nil
 }
 
+func (r *PostgresRepository) Ping(ctx context.Context) error {
+	return r.pool.Ping(ctx)
+}
+
 func (r *PostgresRepository) Close() error {
 	r.pool.Close()
 	return nil

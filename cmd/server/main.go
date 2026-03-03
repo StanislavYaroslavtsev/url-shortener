@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/StanislavYaroslavtsev/url-shortener/config"
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/cache"
@@ -17,6 +18,7 @@ import (
 	"github.com/StanislavYaroslavtsev/url-shortener/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httprate"
 )
 
 func main() {
@@ -64,10 +66,12 @@ func main() {
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
 	router.Use(middleware.Timeout(cfg.Server.HandlerTimeout))
+	router.Use(httprate.LimitByIP(100, time.Minute))
 
 	// Routes
 	router.Post("/shorten", h.ShortenURL)
 	router.Get("/{id}", h.RedirectURL)
+	router.Get("/health", h.Health)
 
 	addr := cfg.Server.Host + ":" + strconv.Itoa(cfg.Server.Port)
 	server := &http.Server{

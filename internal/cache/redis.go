@@ -64,6 +64,10 @@ func (c *RedisCache) Get(ctx context.Context, code string) (*domain.Link, error)
 	return &link, nil
 }
 
+func (c *RedisCache) Ping(ctx context.Context) error {
+	return c.client.Ping(ctx).Err()
+}
+
 func (c *RedisCache) Close() error {
 	if err := c.client.Close(); err != nil {
 		return fmt.Errorf("failed to close redis: %w", err)

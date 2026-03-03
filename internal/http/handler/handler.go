@@ -96,3 +96,34 @@ func (h *Handler) RedirectURL(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, link.URL, http.StatusFound)
 }
+
+func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
+	pings := h.service.Ping(r.Context())
+
+	deps := make(map[string]dto.HealthDependency, len(pings))
+	overall := "ok"
+
+	for name, err := range pings {
+		if err != nil {
+			deps[name] = dto.HealthDependency{Status: "unavailable"}
+			overall = "unavailable"
+		} else {
+			deps[name] = dto.HealthDependency{Status: "ok"}
+		}
+	}
+
+	resp := dto.HealthResponse{
+		Status:       overall,
+		Dependencies: deps,
+	}
+
+	code := http.StatusOK
+	if overall != "ok" {
+		code = http.StatusServiceUnavailable
+	}
+
+	data, _ := json.Marshal(resp)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	_, _ = w.Write(data)
+}

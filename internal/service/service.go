@@ -16,6 +16,7 @@ import (
 type LinkServiceInterface interface {
 	Create(ctx context.Context, url string, expiresAt *time.Time) (*domain.Link, error)
 	Get(ctx context.Context, code string) (*domain.Link, error)
+	Ping(ctx context.Context) map[string]error
 }
 
 type LinkService struct {
@@ -89,6 +90,13 @@ func (s *LinkService) Get(ctx context.Context, code string) (*domain.Link, error
 	}
 
 	return link, nil
+}
+
+func (s *LinkService) Ping(ctx context.Context) map[string]error {
+	return map[string]error{
+		"database": s.repo.Ping(ctx),
+		"cache":    s.cache.Ping(ctx),
+	}
 }
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
