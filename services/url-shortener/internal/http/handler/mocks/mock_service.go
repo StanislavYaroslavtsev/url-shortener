@@ -8,7 +8,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/domain"
 	mock "github.com/stretchr/testify/mock"
 )
 

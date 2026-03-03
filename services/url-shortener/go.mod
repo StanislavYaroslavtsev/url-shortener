@@ -1,4 +1,4 @@
-module github.com/StanislavYaroslavtsev/url-shortener
+module github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener
 
 go 1.26.0
 

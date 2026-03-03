@@ -8,23 +8,23 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/cache"
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/repository"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/cache"
+	domain2 "github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/domain"
+	repository2 "github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/repository"
 )
 
 type LinkServiceInterface interface {
-	Create(ctx context.Context, url string, alias *string, expiresAt *time.Time) (*domain.Link, error)
-	Get(ctx context.Context, code string) (*domain.Link, error)
+	Create(ctx context.Context, url string, alias *string, expiresAt *time.Time) (*domain2.Link, error)
+	Get(ctx context.Context, code string) (*domain2.Link, error)
 	Ping(ctx context.Context) map[string]error
 }
 
 type LinkService struct {
-	repo  repository.LinkRepository
+	repo  repository2.LinkRepository
 	cache cache.Cache
 }
 
-func NewLinkService(repo repository.LinkRepository, cache cache.Cache) *LinkService {
+func NewLinkService(repo repository2.LinkRepository, cache cache.Cache) *LinkService {
 	return &LinkService{
 		repo:  repo,
 		cache: cache,
@@ -33,9 +33,9 @@ func NewLinkService(repo repository.LinkRepository, cache cache.Cache) *LinkServ
 
 const maxCodeGenerationAttempts = 10
 
-func (s *LinkService) Create(ctx context.Context, url string, alias *string, expiresAt *time.Time) (*domain.Link, error) {
+func (s *LinkService) Create(ctx context.Context, url string, alias *string, expiresAt *time.Time) (*domain2.Link, error) {
 	if alias != nil {
-		link, err := domain.NewLink(url, *alias, alias, expiresAt)
+		link, err := domain2.NewLink(url, *alias, alias, expiresAt)
 		if err != nil {
 			return nil, err
 		}
@@ -57,13 +57,13 @@ func (s *LinkService) Create(ctx context.Context, url string, alias *string, exp
 			return nil, err
 		}
 
-		link, err := domain.NewLink(url, code, nil, expiresAt)
+		link, err := domain2.NewLink(url, code, nil, expiresAt)
 		if err != nil {
 			return nil, err
 		}
 
 		if err = s.repo.Save(ctx, link); err != nil {
-			if errors.Is(err, repository.ErrCodeExists) {
+			if errors.Is(err, repository2.ErrCodeExists) {
 				continue
 			}
 			return nil, err
@@ -82,10 +82,10 @@ func (s *LinkService) Create(ctx context.Context, url string, alias *string, exp
 	return nil, fmt.Errorf("failed to generate unique code after %d attempts", maxCodeGenerationAttempts)
 }
 
-func (s *LinkService) Get(ctx context.Context, code string) (*domain.Link, error) {
+func (s *LinkService) Get(ctx context.Context, code string) (*domain2.Link, error) {
 	if cached, err := s.cache.Get(ctx, code); err == nil {
 		if cached.IsExpired() {
-			return nil, domain.ErrLinkExpired
+			return nil, domain2.ErrLinkExpired
 		}
 		return cached, nil
 	}
@@ -96,7 +96,7 @@ func (s *LinkService) Get(ctx context.Context, code string) (*domain.Link, error
 	}
 
 	if link.IsExpired() {
-		return nil, domain.ErrLinkExpired
+		return nil, domain2.ErrLinkExpired
 	}
 
 	if err = s.cache.Set(ctx, code, link); err != nil {

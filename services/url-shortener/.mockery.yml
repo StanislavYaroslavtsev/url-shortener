@@ -13,19 +13,19 @@ require-template-schema-exists: true
 template: testify
 template-schema: '{{.Template}}.schema.json'
 packages:
-  github.com/StanislavYaroslavtsev/url-shortener/internal/repository:
+  github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/repository:
     config:
       all: true
       dir: internal/service/mocks
       pkgname: mocks
       filename: mock_repository.go
-  github.com/StanislavYaroslavtsev/url-shortener/internal/cache:
+  github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/cache:
     config:
       all: true
       dir: internal/service/mocks
       pkgname: mocks
       filename: mock_cache.go
-  github.com/StanislavYaroslavtsev/url-shortener/internal/service:
+  github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/service:
     interfaces:
       LinkServiceInterface:
         config:

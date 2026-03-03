@@ -11,11 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/StanislavYaroslavtsev/url-shortener/config"
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/cache"
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/http/handler"
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/repository"
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/service"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/config"
+	cache2 "github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/cache"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/http/handler"
+	repository2 "github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/repository"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
@@ -39,10 +39,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	var appCache cache.Cache
+	var appCache cache2.Cache
 
 	if cfg.Cache.UseRedis {
-		redisCache, err := cache.NewRedisCache(cfg.Cache.RedisAddr, cfg.Cache.TTL)
+		redisCache, err := cache2.NewRedisCache(cfg.Cache.RedisAddr, cfg.Cache.TTL)
 		if err != nil {
 			slog.Error("Failed to connect to redis", "error", err)
 			os.Exit(1)
@@ -52,7 +52,7 @@ func main() {
 		appCache = redisCache
 	} else {
 		slog.Info("Using in-memory cache")
-		appCache = cache.NewInMemoryCache(cfg.Cache.TTL, cfg.Cache.CleanupInterval)
+		appCache = cache2.NewInMemoryCache(cfg.Cache.TTL, cfg.Cache.CleanupInterval)
 	}
 
 	svc := service.NewLinkService(repo, appCache)
@@ -123,9 +123,9 @@ func main() {
 	slog.Info("Server stopped")
 }
 
-func initRepository(cfg config.DatabaseConfig) (repository.LinkRepository, error) {
+func initRepository(cfg config.DatabaseConfig) (repository2.LinkRepository, error) {
 	if cfg.UsePostgres {
-		repo, err := repository.NewPostgresRepository(cfg)
+		repo, err := repository2.NewPostgresRepository(cfg)
 
 		if err != nil {
 			return nil, err
@@ -136,5 +136,5 @@ func initRepository(cfg config.DatabaseConfig) (repository.LinkRepository, error
 	}
 
 	slog.Info("Using in-memory repository")
-	return repository.NewInMemoryRepository(), nil
+	return repository2.NewInMemoryRepository(), nil
 }

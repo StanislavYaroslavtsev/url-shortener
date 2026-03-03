@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/domain"
 )
 
 type InMemoryCache struct {

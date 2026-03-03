@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/domain"
 	"github.com/redis/go-redis/v9"
 )
 

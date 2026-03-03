@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/StanislavYaroslavtsev/url-shortener/config"
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/config"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/domain"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"

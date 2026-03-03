@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/http/dto"
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/repository"
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/service"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/domain"
+	dto2 "github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/http/dto"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/repository"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 )
@@ -29,7 +29,7 @@ func NewHandler(svc service.LinkServiceInterface, baseURL string) *Handler {
 }
 
 func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
-	var req dto.ShortenRequest
+	var req dto2.ShortenRequest
 
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
@@ -64,7 +64,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := dto.NewShortenResponse(link.Code, h.baseURL)
+	resp := dto2.NewShortenResponse(link.Code, h.baseURL)
 
 	data, err := json.Marshal(resp)
 	if err != nil {
@@ -102,19 +102,19 @@ func (h *Handler) RedirectURL(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 	pings := h.service.Ping(r.Context())
 
-	deps := make(map[string]dto.HealthDependency, len(pings))
+	deps := make(map[string]dto2.HealthDependency, len(pings))
 	overall := "ok"
 
 	for name, err := range pings {
 		if err != nil {
-			deps[name] = dto.HealthDependency{Status: "unavailable"}
+			deps[name] = dto2.HealthDependency{Status: "unavailable"}
 			overall = "unavailable"
 		} else {
-			deps[name] = dto.HealthDependency{Status: "ok"}
+			deps[name] = dto2.HealthDependency{Status: "ok"}
 		}
 	}
 
-	resp := dto.HealthResponse{
+	resp := dto2.HealthResponse{
 		Status:       overall,
 		Dependencies: deps,
 	}

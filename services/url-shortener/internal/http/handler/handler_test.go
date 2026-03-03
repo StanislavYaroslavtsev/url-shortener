@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/domain"
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/http/handler/mocks"
-	"github.com/StanislavYaroslavtsev/url-shortener/internal/repository"
+	domain2 "github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/domain"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/http/handler/mocks"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/repository"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -45,7 +45,7 @@ func healthRequest(t *testing.T, h *Handler) (*httptest.ResponseRecorder, map[st
 func TestHandler_ShortenURL_ReturnsShortURL(t *testing.T) {
 	h, svc := newTestHandler(t)
 
-	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
+	link, err := domain2.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
 
 	svc.EXPECT().Create(mock.Anything, "https://google.com", mock.Anything, mock.Anything).Return(link, nil)
@@ -69,7 +69,7 @@ func TestHandler_ShortenURL_WithAlias_ReturnsShortURL(t *testing.T) {
 	h, svc := newTestHandler(t)
 
 	alias := "my-link"
-	link, err := domain.NewLink("https://google.com", alias, &alias, nil)
+	link, err := domain2.NewLink("https://google.com", alias, &alias, nil)
 	require.NoError(t, err)
 
 	svc.EXPECT().Create(mock.Anything, "https://google.com", mock.Anything, mock.Anything).Return(link, nil)
@@ -150,7 +150,7 @@ func TestHandler_ShortenURL_ServiceError_ReturnsInternalServerError(t *testing.T
 func TestHandler_RedirectURL_Redirects(t *testing.T) {
 	h, svc := newTestHandler(t)
 
-	link, err := domain.NewLink("https://google.com", "abc123", nil, nil)
+	link, err := domain2.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
 
 	svc.EXPECT().Get(mock.Anything, "abc123").Return(link, nil)
@@ -186,7 +186,7 @@ func TestHandler_RedirectURL_NotFound_Returns404(t *testing.T) {
 func TestHandler_RedirectURL_ExpiredLink_Returns410(t *testing.T) {
 	h, svc := newTestHandler(t)
 
-	svc.EXPECT().Get(mock.Anything, "abc123").Return(nil, domain.ErrLinkExpired)
+	svc.EXPECT().Get(mock.Anything, "abc123").Return(nil, domain2.ErrLinkExpired)
 
 	router := chi.NewRouter()
 	router.Get("/{id}", h.RedirectURL)
