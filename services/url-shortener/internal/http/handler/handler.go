@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/domain"
 	dto2 "github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/http/dto"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/producer"
 	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/repository"
 	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -16,13 +18,15 @@ import (
 
 type Handler struct {
 	service  service.LinkServiceInterface
+	producer producer.ClickProducer
 	baseURL  string
 	validate *validator.Validate
 }
 
-func NewHandler(svc service.LinkServiceInterface, baseURL string) *Handler {
+func NewHandler(svc service.LinkServiceInterface, prod producer.ClickProducer, baseURL string) *Handler {
 	return &Handler{
 		service:  svc,
+		producer: prod,
 		baseURL:  baseURL,
 		validate: validator.New(),
 	}
@@ -95,6 +99,12 @@ func (h *Handler) RedirectURL(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
+	go func() {
+		if err = h.producer.SendClickEvent(context.Background(), link, r.RemoteAddr); err != nil {
+			slog.Warn("Failed to send click event", "error", err)
+		}
+	}()
 
 	http.Redirect(w, r, link.URL, http.StatusFound)
 }

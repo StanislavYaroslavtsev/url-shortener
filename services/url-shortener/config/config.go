@@ -15,6 +15,7 @@ type Config struct {
 	App      AppConfig      `mapstructure:"app"`
 	Database DatabaseConfig `mapstructure:"database"`
 	Cache    CacheConfig    `mapstructure:"cache"`
+	Kafka    KafkaConfig    `mapstructure:"kafka"`
 }
 
 type ServerConfig struct {
@@ -28,8 +29,14 @@ type ServerConfig struct {
 }
 
 type AppConfig struct {
-	BaseURL string `mapstructure:"base_url"`
-	Env     string `mapstructure:"env"`
+	BaseURL   string `mapstructure:"base_url"`
+	Env       string `mapstructure:"env"`
+	GeoIPPath string `mapstructure:"geoip_path"`
+}
+
+type KafkaConfig struct {
+	Addr  string `mapstructure:"addr"`
+	Topic string `mapstructure:"topic"`
 }
 
 type DatabaseConfig struct {
@@ -117,6 +124,10 @@ func setDefaults() {
 
 	viper.SetDefault("app.base_url", "http://localhost:3000")
 	viper.SetDefault("app.env", "development")
+	viper.SetDefault("app.geoip_path", "GeoLite2-Country.mmdb")
+
+	viper.SetDefault("kafka.addr", "kafka:29092")
+	viper.SetDefault("kafka.topic", "click_events")
 
 	viper.SetDefault("database.use_postgres", false)
 	viper.SetDefault("database.host", "postgres")

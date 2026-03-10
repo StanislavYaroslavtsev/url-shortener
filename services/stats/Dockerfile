@@ -6,11 +6,9 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-COPY GeoLite2-Country.mmdb .
 
 RUN go build -o ./bin/app ./cmd/server
 
 FROM builder AS development
 RUN go install github.com/air-verse/air@latest
-EXPOSE 3000
 CMD ["air", "-c", ".air.toml"]

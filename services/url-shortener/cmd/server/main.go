@@ -13,7 +13,9 @@ import (
 
 	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/config"
 	cache2 "github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/cache"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/geo"
 	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/http/handler"
+	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/producer"
 	repository2 "github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/repository"
 	"github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -55,8 +57,15 @@ func main() {
 		appCache = cache2.NewInMemoryCache(cfg.Cache.TTL, cfg.Cache.CleanupInterval)
 	}
 
+	geoIP, err := geo.NewGeoIP(cfg.App.GeoIPPath)
+	if err != nil {
+		slog.Error("Failed to load GeoIP database", "error", err)
+		os.Exit(1)
+	}
+
 	svc := service.NewLinkService(repo, appCache)
-	h := handler.NewHandler(svc, cfg.App.BaseURL)
+	kafkaProducer := producer.NewKafkaProducer(cfg.Kafka.Addr, cfg.Kafka.Topic, geoIP)
+	h := handler.NewHandler(svc, kafkaProducer, cfg.App.BaseURL)
 
 	router := chi.NewRouter()
 
@@ -118,6 +127,18 @@ func main() {
 		slog.Error("Failed to close repository", "error", err)
 	} else {
 		slog.Info("Database connection closed")
+	}
+
+	if err = kafkaProducer.Close(); err != nil {
+		slog.Error("Failed to close kafka producer", "error", err)
+	} else {
+		slog.Info("Kafka producer closed")
+	}
+
+	if err = geoIP.Close(); err != nil {
+		slog.Error("Failed to close geoip", "error", err)
+	} else {
+		slog.Info("GeoIP closed")
 	}
 
 	slog.Info("Server stopped")

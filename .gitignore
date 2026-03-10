@@ -8,6 +8,7 @@
 *.so
 *.dylib
 tmp/
+*.mmdb
 
 # Test binary, built with `go test -c`
 *.test
@@ -26,7 +27,7 @@ go.work
 go.work.sum
 
 # env file
-services/url-shortener/.env
+.env
 
 # Editor/IDE
 .idea/
