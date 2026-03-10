@@ -18,7 +18,7 @@ import (
 
 func newTestHandler(t *testing.T) (*Handler, *mocks.MockLinkServiceInterface) {
 	svc := mocks.NewMockLinkServiceInterface(t)
-	h := NewHandler(svc, "http://localhost:3000")
+	h := NewHandler(svc, nil, "http://localhost:3000")
 	return h, svc
 }
 
