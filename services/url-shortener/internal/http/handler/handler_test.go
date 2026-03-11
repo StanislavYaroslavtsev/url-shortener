@@ -16,10 +16,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newTestHandler(t *testing.T) (*Handler, *mocks.MockLinkServiceInterface) {
+func newTestHandler(t *testing.T) (*Handler, *mocks.MockLinkServiceInterface, *mocks.MockClickProducer) {
 	svc := mocks.NewMockLinkServiceInterface(t)
-	h := NewHandler(svc, nil, "http://localhost:3000")
-	return h, svc
+	prod := mocks.NewMockClickProducer(t)
+	h := NewHandler(svc, prod, "http://localhost:3000")
+	return h, svc, prod
 }
 
 func newRequest(t *testing.T, method, url string, body any) *http.Request {
@@ -43,7 +44,7 @@ func healthRequest(t *testing.T, h *Handler) (*httptest.ResponseRecorder, map[st
 }
 
 func TestHandler_ShortenURL_ReturnsShortURL(t *testing.T) {
-	h, svc := newTestHandler(t)
+	h, svc, _ := newTestHandler(t)
 
 	link, err := domain2.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
@@ -66,7 +67,7 @@ func TestHandler_ShortenURL_ReturnsShortURL(t *testing.T) {
 }
 
 func TestHandler_ShortenURL_WithAlias_ReturnsShortURL(t *testing.T) {
-	h, svc := newTestHandler(t)
+	h, svc, _ := newTestHandler(t)
 
 	alias := "my-link"
 	link, err := domain2.NewLink("https://google.com", alias, &alias, nil)
@@ -91,7 +92,7 @@ func TestHandler_ShortenURL_WithAlias_ReturnsShortURL(t *testing.T) {
 }
 
 func TestHandler_ShortenURL_AliasAlreadyTaken_ReturnsConflict(t *testing.T) {
-	h, svc := newTestHandler(t)
+	h, svc, _ := newTestHandler(t)
 
 	svc.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, repository.ErrCodeExists)
@@ -108,7 +109,7 @@ func TestHandler_ShortenURL_AliasAlreadyTaken_ReturnsConflict(t *testing.T) {
 }
 
 func TestHandler_ShortenURL_InvalidJSON_ReturnsBadRequest(t *testing.T) {
-	h, _ := newTestHandler(t)
+	h, _, _ := newTestHandler(t)
 
 	req := httptest.NewRequest(http.MethodPost, "/shorten", bytes.NewBufferString("not json"))
 	rec := httptest.NewRecorder()
@@ -119,7 +120,7 @@ func TestHandler_ShortenURL_InvalidJSON_ReturnsBadRequest(t *testing.T) {
 }
 
 func TestHandler_ShortenURL_EmptyURL_ReturnsBadRequest(t *testing.T) {
-	h, _ := newTestHandler(t)
+	h, _, _ := newTestHandler(t)
 
 	req := newRequest(t, http.MethodPost, "/shorten", map[string]string{
 		"url": "",
@@ -132,7 +133,7 @@ func TestHandler_ShortenURL_EmptyURL_ReturnsBadRequest(t *testing.T) {
 }
 
 func TestHandler_ShortenURL_ServiceError_ReturnsInternalServerError(t *testing.T) {
-	h, svc := newTestHandler(t)
+	h, svc, _ := newTestHandler(t)
 
 	svc.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, assert.AnError)
@@ -148,12 +149,13 @@ func TestHandler_ShortenURL_ServiceError_ReturnsInternalServerError(t *testing.T
 }
 
 func TestHandler_RedirectURL_Redirects(t *testing.T) {
-	h, svc := newTestHandler(t)
+	h, svc, prod := newTestHandler(t)
 
 	link, err := domain2.NewLink("https://google.com", "abc123", nil, nil)
 	require.NoError(t, err)
 
 	svc.EXPECT().Get(mock.Anything, "abc123").Return(link, nil)
+	prod.EXPECT().SendClickEvent(mock.Anything, link, mock.Anything).Return(nil)
 
 	router := chi.NewRouter()
 	router.Get("/{id}", h.RedirectURL)
@@ -168,7 +170,7 @@ func TestHandler_RedirectURL_Redirects(t *testing.T) {
 }
 
 func TestHandler_RedirectURL_NotFound_Returns404(t *testing.T) {
-	h, svc := newTestHandler(t)
+	h, svc, _ := newTestHandler(t)
 
 	svc.EXPECT().Get(mock.Anything, "abc123").Return(nil, repository.ErrLinkNotFound)
 
@@ -184,7 +186,7 @@ func TestHandler_RedirectURL_NotFound_Returns404(t *testing.T) {
 }
 
 func TestHandler_RedirectURL_ExpiredLink_Returns410(t *testing.T) {
-	h, svc := newTestHandler(t)
+	h, svc, _ := newTestHandler(t)
 
 	svc.EXPECT().Get(mock.Anything, "abc123").Return(nil, domain2.ErrLinkExpired)
 
@@ -200,7 +202,7 @@ func TestHandler_RedirectURL_ExpiredLink_Returns410(t *testing.T) {
 }
 
 func TestHandler_Health_AllDepsOk_Returns200(t *testing.T) {
-	h, svc := newTestHandler(t)
+	h, svc, _ := newTestHandler(t)
 
 	svc.EXPECT().Ping(mock.Anything).Return(map[string]error{
 		"database": nil,
@@ -214,7 +216,7 @@ func TestHandler_Health_AllDepsOk_Returns200(t *testing.T) {
 }
 
 func TestHandler_Health_DBUnavailable_Returns503(t *testing.T) {
-	h, svc := newTestHandler(t)
+	h, svc, _ := newTestHandler(t)
 
 	svc.EXPECT().Ping(mock.Anything).Return(map[string]error{
 		"database": assert.AnError,
@@ -228,7 +230,7 @@ func TestHandler_Health_DBUnavailable_Returns503(t *testing.T) {
 }
 
 func TestHandler_Health_CacheUnavailable_Returns503(t *testing.T) {
-	h, svc := newTestHandler(t)
+	h, svc, _ := newTestHandler(t)
 
 	svc.EXPECT().Ping(mock.Anything).Return(map[string]error{
 		"database": nil,

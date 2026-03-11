@@ -32,3 +32,10 @@ packages:
           dir: internal/http/handler/mocks
           pkgname: mocks
           filename: mock_service.go
+  github.com/StanislavYaroslavtsev/url-shortener/services/url-shortener/internal/producer:
+    interfaces:
+      ClickProducer:
+        config:
+          dir: internal/http/handler/mocks
+          pkgname: mocks
+          filename: mock_producer.go
