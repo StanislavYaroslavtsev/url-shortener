@@ -29,7 +29,7 @@ func NewKafkaConsumer(addr, topic, groupID string, repo repository.EventReposito
 
 func (c *KafkaConsumer) Start(ctx context.Context) {
 	for {
-		msg, err := c.reader.ReadMessage(ctx)
+		msg, err := c.reader.FetchMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				return
@@ -41,6 +41,7 @@ func (c *KafkaConsumer) Start(ctx context.Context) {
 		var event domain.ClickEvent
 		if err = json.Unmarshal(msg.Value, &event); err != nil {
 			slog.Error("Failed to unmarshal event", "error", err)
+			_ = c.reader.CommitMessages(ctx, msg)
 			continue
 		}
 
@@ -50,6 +51,17 @@ func (c *KafkaConsumer) Start(ctx context.Context) {
 
 		if err = c.repo.Save(ctx, &event); err != nil {
 			slog.Error("Failed to save event", "error", err)
+			select {
+			case <-time.After(5 * time.Second):
+				continue
+			case <-ctx.Done():
+				return
+			}
+		}
+
+		err = c.reader.CommitMessages(ctx, msg)
+		if err != nil {
+			slog.Error("Failed to commit message", "error", err)
 			continue
 		}
 

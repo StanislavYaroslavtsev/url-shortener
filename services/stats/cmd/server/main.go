@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/StanislavYaroslavtsev/url-shortener/services/stats/config"
@@ -51,9 +52,16 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	go c.Start(ctx)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		c.Start(ctx)
+	}()
 
 	<-quit
 	slog.Info("Shutting down...")
 	cancel()
+	wg.Wait()
+	slog.Info("Consumer stopped")
 }
