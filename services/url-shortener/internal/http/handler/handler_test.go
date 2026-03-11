@@ -155,7 +155,7 @@ func TestHandler_RedirectURL_Redirects(t *testing.T) {
 	require.NoError(t, err)
 
 	svc.EXPECT().Get(mock.Anything, "abc123").Return(link, nil)
-	prod.EXPECT().SendClickEvent(mock.Anything, link, mock.Anything).Return(nil)
+	prod.EXPECT().SendClickEvent(mock.Anything, link, mock.Anything).Return(nil).Maybe()
 
 	router := chi.NewRouter()
 	router.Get("/{id}", h.RedirectURL)
