@@ -2,11 +2,12 @@ FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
-RUN go mod download
+COPY go.work go.work.sum ./
+COPY shared/ ./shared/
+COPY services/url-shortener/ ./services/url-shortener/
+COPY services/stats/go.mod services/stats/go.sum ./services/stats/
 
-COPY . .
-COPY GeoLite2-Country.mmdb .
+WORKDIR /app/services/url-shortener
 
 RUN go build -o ./bin/app ./cmd/server
 

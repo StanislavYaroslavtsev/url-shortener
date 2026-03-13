@@ -53,6 +53,53 @@ func (r *ClickHouseRepository) Save(ctx context.Context, event *domain.ClickEven
 	return nil
 }
 
+func (r *ClickHouseRepository) GetStats(ctx context.Context, code string) (*StatsResult, error) {
+	var result StatsResult
+	var topCountries []CountryStats
+
+	rows, err := r.conn.Query(ctx, `
+		SELECT 
+			country, 
+			COUNT() AS clicks
+		FROM click_events
+		WHERE code = ?
+		GROUP BY country
+		ORDER BY clicks DESC
+		LIMIT 10`, code)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query top countries: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cs CountryStats
+		if err = rows.Scan(&cs.Country, &cs.Clicks); err != nil {
+			return nil, fmt.Errorf("failed to scan country stats: %w", err)
+		}
+
+		topCountries = append(topCountries, cs)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate rows: %w", err)
+	}
+
+	err = r.conn.QueryRow(ctx, `
+		SELECT 
+			COUNT(), 
+			MAX(clicked_at)
+		FROM click_events
+		WHERE code = ?`, code).Scan(&result.TotalClicks, &result.LastClickedAt)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query total clicks and last clicked at: %w", err)
+	}
+
+	result.TopCountries = topCountries
+	return &result, nil
+}
+
 func (r *ClickHouseRepository) Close() error {
 	return r.conn.Close()
 }

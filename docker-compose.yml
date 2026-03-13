@@ -1,16 +1,18 @@
 services:
   app-dev:
     build:
-      context: ./services/url-shortener
+      context: .
+      dockerfile: ./services/url-shortener/Dockerfile
       target: development
     ports:
       - "3000:3000"
     volumes:
-      - ./services/url-shortener:/app
+      - ./services/url-shortener:/app/services/url-shortener
+      - ./shared:/app/shared
     env_file:
       - .env
     environment:
-      - APP_ENV=development
+      - APP_ENV=dev
     depends_on:
       postgres:
         condition: service_healthy
@@ -19,12 +21,18 @@ services:
 
   stats:
     build:
-      context: ./services/stats
+      context: .
+      dockerfile: ./services/stats/Dockerfile
       target: development
+    ports:
+      - "50051:50051"
     volumes:
-      - ./services/stats:/app
+      - ./services/stats:/app/services/stats
+      - ./shared:/app/shared
     env_file:
       - .env
+    environment:
+      - APP_ENV=dev
     depends_on:
       clickhouse:
         condition: service_healthy

@@ -3,7 +3,7 @@ export
 
 export GOOSE_DRIVER := clickhouse
 export GOOSE_MIGRATION_DIR := migrations
-export GOOSE_DBSTRING := clickhouse://$(CLICKHOUSE_USER):$(CLICKHOUSE_PASSWORD)@$(CLICKHOUSE_ADDR)/$(CLICKHOUSE_DB)
+export GOOSE_DBSTRING := clickhouse://$(CLICKHOUSE_USER):$(CLICKHOUSE_PASSWORD)@localhost:9000/$(CLICKHOUSE_DB)
 
 migrate-up:
 	goose up

@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package stats;
+
+option go_package = "github.com/StanislavYaroslavtsev/url-shortener/shared/proto";
+
+service StatsService {
+  rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
+}
+
+message GetStatsRequest {
+  string code = 1;
+}
+
+message CountryStats {
+  string country = 1;
+  uint64 clicks  = 2;
+}
+
+message GetStatsResponse {
+  string code = 1;
+  uint64 total_clicks = 2;
+  string last_clicked_at = 3;
+  repeated CountryStats top_countries = 4;
+}

@@ -123,7 +123,7 @@ func setDefaults() {
 	viper.SetDefault("server.shutdown_timeout", "5s")
 
 	viper.SetDefault("app.base_url", "http://localhost:3000")
-	viper.SetDefault("app.env", "development")
+	viper.SetDefault("app.env", "dev")
 	viper.SetDefault("app.geoip_path", "GeoLite2-Country.mmdb")
 
 	viper.SetDefault("kafka.addr", "kafka:29092")

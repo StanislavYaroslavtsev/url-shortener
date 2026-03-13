@@ -10,8 +10,14 @@ import (
 )
 
 type Config struct {
+	App        AppConfig        `mapstructure:"app"`
 	ClickHouse ClickHouseConfig `mapstructure:"clickhouse"`
 	Kafka      KafkaConfig      `mapstructure:"kafka"`
+	GRPC       GRPCConfig       `mapstructure:"grpc"`
+}
+
+type AppConfig struct {
+	Env string `mapstructure:"env"`
 }
 
 type ClickHouseConfig struct {
@@ -25,6 +31,10 @@ type KafkaConfig struct {
 	Addr    string `mapstructure:"addr"`
 	Topic   string `mapstructure:"topic"`
 	GroupID string `mapstructure:"group_id"`
+}
+
+type GRPCConfig struct {
+	Port int `mapstructure:"port"`
 }
 
 var (
@@ -66,6 +76,7 @@ func Init() (*Config, error) {
 		instance = cfg
 
 		slog.Info("Config loaded",
+			"env", cfg.App.Env,
 			"clickhouse_addr", cfg.ClickHouse.Addr,
 			"kafka_addr", cfg.Kafka.Addr,
 			"kafka_topic", cfg.Kafka.Topic,
@@ -80,6 +91,8 @@ func Init() (*Config, error) {
 }
 
 func setDefaults() {
+	viper.SetDefault("app.env", "dev")
+
 	viper.SetDefault("clickhouse.addr", "clickhouse:9000")
 	viper.SetDefault("clickhouse.database", "stats")
 	viper.SetDefault("clickhouse.user", "stats")
@@ -88,9 +101,13 @@ func setDefaults() {
 	viper.SetDefault("kafka.addr", "kafka:29092")
 	viper.SetDefault("kafka.topic", "click_events")
 	viper.SetDefault("kafka.group_id", "stats")
+
+	viper.SetDefault("grpc.port", 50051)
 }
 
 func bindEnvVars() {
+	_ = viper.BindEnv("app.env", "APP_ENV")
+
 	_ = viper.BindEnv("clickhouse.addr", "CLICKHOUSE_ADDR")
 	_ = viper.BindEnv("clickhouse.database", "CLICKHOUSE_DATABASE")
 	_ = viper.BindEnv("clickhouse.user", "CLICKHOUSE_USER")
@@ -99,4 +116,6 @@ func bindEnvVars() {
 	_ = viper.BindEnv("kafka.addr", "KAFKA_ADDR")
 	_ = viper.BindEnv("kafka.topic", "KAFKA_TOPIC")
 	_ = viper.BindEnv("kafka.group_id", "KAFKA_GROUP_ID")
+
+	_ = viper.BindEnv("grpc.port", "GRPC_PORT")
 }
